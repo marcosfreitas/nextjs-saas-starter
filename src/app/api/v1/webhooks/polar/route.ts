@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
 import { assertEnv } from '@/shared/config/assert-env';
 
 // Extend this handler as you add Polar webhook events.
@@ -6,15 +7,23 @@ import { assertEnv } from '@/shared/config/assert-env';
 
 export async function POST(req: NextRequest) {
   const secret = assertEnv('POLAR_WEBHOOK_SECRET');
-  const signature = req.headers.get('webhook-signature') ?? '';
 
-  if (!signature || signature !== secret) {
-    return NextResponse.json({ error: 'Invalid signature.' }, { status: 401 });
+  // Verify over the raw body — validateEvent computes the Standard Webhooks
+  // HMAC and throws on mismatch. Must read text() before any json() parse.
+  const body = await req.text();
+  const headers = Object.fromEntries(req.headers);
+
+  let event;
+  try {
+    event = validateEvent(body, headers, secret);
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) {
+      return NextResponse.json({ error: 'Invalid signature.' }, { status: 403 });
+    }
+    throw err;
   }
 
-  const payload = await req.json();
-
-  switch (payload.type) {
+  switch (event.type) {
     case 'subscription.created':
     case 'subscription.updated':
     case 'subscription.canceled':

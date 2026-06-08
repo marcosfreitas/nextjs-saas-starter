@@ -15,7 +15,7 @@ export interface IBillingProvider {
   }): Promise<CheckoutSession>;
 
   createPortalSession(params: {
-    customerId: string;
+    externalCustomerId: string;
     returnUrl: string;
   }): Promise<{ url: string }>;
 }
@@ -35,9 +35,12 @@ export class PolarProvider implements IBillingProvider {
   }): Promise<CheckoutSession> {
     try {
       const checkout = await this.client.checkouts.create({
-        productId,
+        products: [productId],
         successUrl,
         customerEmail: email,
+        // Bind the Polar customer to our user so the portal can be resolved
+        // server-side by external ID — never trust a client-supplied customer id.
+        externalCustomerId: userId,
         metadata: { userId },
       });
 
@@ -49,17 +52,18 @@ export class PolarProvider implements IBillingProvider {
     }
   }
 
-  async createPortalSession({ customerId, returnUrl }: {
-    customerId: string;
+  async createPortalSession({ externalCustomerId, returnUrl }: {
+    externalCustomerId: string;
     returnUrl: string;
   }): Promise<{ url: string }> {
     try {
       const session = await this.client.customerSessions.create({
-        customerId,
+        externalCustomerId,
       });
 
-      const url = `${session.customerPortalUrl}?return_to=${encodeURIComponent(returnUrl)}`;
-      return { url };
+      const portalUrl = new URL(session.customerPortalUrl);
+      portalUrl.searchParams.set('return_to', returnUrl);
+      return { url: portalUrl.toString() };
     } catch (err) {
       throw new ExternalApiError('Polar', (err as Error).message);
     }

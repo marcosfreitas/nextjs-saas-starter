@@ -35,7 +35,7 @@ export class AnthropicProvider implements ILLMProvider {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     { systemPrompt, maxTokens, model: modelOverride, outputSchema, signal }: LLMOptions
   ): Promise<string> {
-    const model = modelOverride ?? (maxTokens <= 5000 ? 'claude-sonnet-4-6' : 'claude-opus-4-7');
+    const model = modelOverride ?? (maxTokens <= 5000 ? 'claude-sonnet-4-6' : 'claude-opus-4-8');
 
     const attempt = async (): Promise<string> => {
       const response = await this.client.messages.create(

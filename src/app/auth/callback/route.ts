@@ -4,7 +4,13 @@ import { createClient } from '@/infrastructure/database/server';
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+  // Only allow same-origin relative paths — reject protocol-relative (`//evil`)
+  // or backslash-tricks to prevent open redirects.
+  const nextParam = searchParams.get('next') ?? '/dashboard';
+  const next =
+    nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/\\')
+      ? nextParam
+      : '/dashboard';
 
   if (code) {
     const supabase = await createClient();

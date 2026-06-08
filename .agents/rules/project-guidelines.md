@@ -27,7 +27,7 @@
 - Magic link (OTP) via Supabase Auth by default
 - `getCurrentUser()` throws `UnauthorizedError` if not authenticated
 - `getCurrentUserOrNull()` for pages that handle both states
-- Middleware at `src/middleware.ts` refreshes sessions on every request
+- Proxy at `src/proxy.ts` refreshes sessions on every request
 
 ## Naming Conventions
 - Services: `{verb}{Noun}Service` — `GetUserService`, `CreateOrderService`

@@ -9,10 +9,19 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+// Permissive placeholder until real types are generated. Replace by running:
+//   pnpm supabase gen types typescript --project-id YOUR_PROJECT_ID > src/infrastructure/database/types.ts
+type GenericTable = {
+  Row: Record<string, unknown>;
+  Insert: Record<string, unknown>;
+  Update: Record<string, unknown>;
+  Relationships: [];
+};
+
 export interface Database {
   public: {
-    Tables: Record<string, never>;
-    Views: Record<string, never>;
+    Tables: { [name: string]: GenericTable };
+    Views: { [name: string]: { Row: Record<string, unknown>; Relationships: [] } };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

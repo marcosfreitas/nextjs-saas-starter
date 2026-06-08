@@ -1,0 +1,8 @@
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@anthropic-ai/sdk@0.102.0'
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver

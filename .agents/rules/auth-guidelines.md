@@ -4,7 +4,7 @@
 Supabase Auth — magic link (OTP) by default.
 
 ## Session Management
-- `src/middleware.ts` — refreshes sessions on every request via cookie exchange
+- `src/proxy.ts` — refreshes sessions on every request via cookie exchange (Next.js proxy, formerly middleware)
 - `src/infrastructure/database/server.ts` — SSR client reads/writes cookies
 - `src/infrastructure/database/auth-session.ts` — `getCurrentUser()` / `getCurrentUserOrNull()`
 
