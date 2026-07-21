@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale } from 'next-intl/server';
 import { Toaster } from 'sonner';
 import './globals.css';
 
@@ -11,12 +13,16 @@ export const metadata: Metadata = {
   description: 'Built with nextjs-saas-starter',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Toaster richColors />
+        <NextIntlClientProvider>
+          {children}
+          <Toaster richColors />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
