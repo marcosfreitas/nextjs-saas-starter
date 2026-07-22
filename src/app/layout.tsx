@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 import { Toaster } from 'sonner';
+import { QueryProvider } from '@/shared/providers/query-provider';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
@@ -20,8 +21,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextIntlClientProvider>
-          {children}
-          <Toaster richColors />
+          <QueryProvider>
+            {children}
+            <Toaster richColors />
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

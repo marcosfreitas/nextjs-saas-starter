@@ -17,6 +17,14 @@
   - Generated types at `src/infrastructure/database/types.ts`
 - **Zod 4** — all input validation at API boundaries
 
+## State Management
+- **TanStack Query (`@tanstack/react-query` 5.x)** — server state: fetching, caching, mutations, invalidation
+  - `QueryProvider` at `src/shared/providers/query-provider.tsx` (wired in root layout)
+  - Colocate query/mutation hooks in `src/features/{domain}/hooks/`
+  - Devtools enabled in development only
+  - Chosen over SWR for first-class mutations/optimistic updates (this is an app template, not a content site)
+- **Zustand 5.x** — client/UI state only (no server data); stores in `src/shared/stores/`
+
 ## AI / LLM
 - **Anthropic Claude** via `@anthropic-ai/sdk`
   - `AnthropicProvider` at `src/infrastructure/llm/anthropic.provider.ts`

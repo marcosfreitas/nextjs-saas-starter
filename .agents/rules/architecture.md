@@ -67,6 +67,9 @@ shared/
 ├── components/       # Shared layout pieces
 ├── config/           # assertEnv and app-wide config
 ├── errors/           # Full error hierarchy
+├── i18n/             # next-intl config, request handler, messages
+├── providers/        # App-wide React providers (TanStack Query)
+├── stores/           # Zustand client/UI state stores
 └── utils/            # api-handler, rate-limit, cn()
 ```
 
