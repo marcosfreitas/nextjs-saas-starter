@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { timedFetch } from '@/infrastructure/database/timed-fetch';
 
 export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req });
@@ -8,6 +9,7 @@ export async function proxy(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: timedFetch },
       cookies: {
         getAll() { return req.cookies.getAll(); },
         setAll(cookiesToSet) {
