@@ -16,7 +16,7 @@ O detalhe fica em `.agents/rules/`. Carregue o arquivo quando o assunto aparecer
 | Fluxo de trabalho / commits | [`.agents/rules/sdlc.md`](.agents/rules/sdlc.md) |
 | Segurança | [`.agents/rules/security-analysis.md`](.agents/rules/security-analysis.md) |
 
-Skills ficam em `.agents/skills/` (frontend-design, security-review, copywriting, marketing-psychology, vercel-react-best-practices). `.claude/skills/` guarda cópias instaladas pelo plugin manager. Não edite as duas: a fonte é `.agents/skills/`.
+Skills ficam em dois lugares. Cinco têm a fonte em `.agents/skills/` (frontend-design, security-review, copywriting, marketing-psychology, vercel-react-best-practices), e `.claude/skills/` só tem um symlink para cada uma: edite a fonte, nunca pelo symlink. As outras oito (orc, interface-design, theme-factory, documentation-organizer, webapp-testing, agentic-owasp-security, branding-specialist, marketing-specialist) existem apenas em `.claude/skills/`, que é a fonte delas. Todas são cópias vendorizadas: nada as atualiza sozinho.
 
 ## Regra de dependência
 
