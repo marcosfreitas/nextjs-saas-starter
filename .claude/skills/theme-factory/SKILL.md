@@ -16,18 +16,22 @@ To apply consistent, professional styling to presentation slide decks, use this 
 - Complementary font pairings for headers and body text
 - A distinct visual identity suitable for different contexts and audiences
 
+## Scope
+
+This skill styles artifacts Claude renders on its own (slides, documents, reports, standalone HTML pages). It does not apply to this app's UI: the app's tokens live in `src/app/globals.css` (Tailwind 4 `@theme` mapped to shadcn variables), and the theme files here use a different format. For the app, use interface-design or frontend-design.
+
 ## Usage Instructions
 
 To apply styling to a slide deck or other artifact:
 
-1. **Show the theme showcase**: Display the `theme-showcase.pdf` file to allow users to see all available themes visually. Do not make any modifications to it; simply show the file for viewing.
+1. **Show the options**: List the themes below with their one-line descriptions. To preview one, read its file in `themes/` and show its palette and font pairing.
 2. **Ask for their choice**: Ask which theme to apply to the deck
 3. **Wait for selection**: Get explicit confirmation about the chosen theme
 4. **Apply the theme**: Once a theme has been chosen, apply the selected theme's colors and fonts to the deck/artifact
 
 ## Themes Available
 
-The following 10 themes are available, each showcased in `theme-showcase.pdf`:
+The following 10 themes are available, each specified in `themes/<name>.md`:
 
 1. **Ocean Depths** - Professional and calming maritime theme
 2. **Sunset Boulevard** - Warm and vibrant sunset colors

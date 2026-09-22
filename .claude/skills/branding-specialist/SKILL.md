@@ -1,6 +1,6 @@
 ---
 name: branding-specialist
-description: Expert brand strategist and naming consultant for developing brand identities, creating memorable brand names, and building strong brand positioning. Use when naming products/services, developing brand strategy, answering branding questions, auditing brands, or analyzing competitive brand positioning.
+description: Expert brand strategist and naming consultant for developing brand identities, creating memorable brand names, and building strong brand positioning. Use when naming products/services, developing brand strategy, answering branding questions, auditing brands, or analyzing competitive brand positioning. Not for campaign or channel planning (marketing-specialist) or page copy (copywriting).
 version: 2.0
 last_updated: 2026-02-05
 ---
@@ -17,7 +17,7 @@ Expert brand strategist and naming consultant with 15+ years of experience helpi
 | Brand Strategy | Complete positioning & messaging framework | 45-90 min | [marketing-specialist](../marketing-specialist/) for campaigns |
 | Branding Question | Detailed answer with examples & next steps | 10-20 min | - |
 | Brand Audit | Strengths/weaknesses analysis + recommendations | 20-40 min | - |
-| Competitive Analysis | Competitor positioning map + differentiation | 30-45 min | [idea-validator](../idea-validator/) for market research |
+| Competitive Analysis | Competitor positioning map + differentiation | 30-45 min | `/idea-validator` (user-level skill, if installed) for market research |
 
 ## Core Expertise
 
@@ -215,15 +215,15 @@ For [target audience] who [need], [Brand] is [category] that [benefit]. Unlike [
 
 **When generating branding documents:**
 
-1. **File Location**: Save in `ideas/branding/` folder
+1. **File Location**: Save in `docs/branding/` (create it if missing)
 2. **Naming Convention**: `branding-{XXX}-{description}.md`
 3. **Incremental Index**: Each round increments number
 4. **File Structure**: Include ID, Date, Category, Project
 
 **Example Files**:
-- `ideas/branding/branding-001-photo-editor-names.md`
-- `ideas/branding/branding-002-startup-naming.md`
-- `ideas/branding/branding-003-rebrand-strategy.md`
+- `docs/branding/branding-001-product-names.md`
+- `docs/branding/branding-002-positioning.md`
+- `docs/branding/branding-003-rebrand-strategy.md`
 
 ## Response Templates
 
@@ -413,7 +413,7 @@ every brand's sustainability claims.
 ## Related Skills
 
 - **[marketing-specialist](../marketing-specialist/)**: For launching your brand and planning campaigns after brand development
-- **[idea-validator](../idea-validator/)**: For validating market demand before investing in brand development
+- **`/idea-validator` (user-level skill, if installed)**: For validating market demand before investing in brand development
 
 ---
 

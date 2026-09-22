@@ -1,6 +1,6 @@
 ---
 name: marketing-specialist
-description: Expert digital marketing strategist for planning and executing successful marketing campaigns across all digital channels. Use when planning marketing campaigns, asking marketing questions, developing channel strategies, diagnosing marketing problems, or analyzing competitive marketing.
+description: Expert digital marketing strategist for planning and executing successful marketing campaigns across all digital channels. Use when planning marketing campaigns, developing channel strategies (paid, SEO, social, email, launch), diagnosing why a channel underperforms, or analyzing competitors' marketing. Not for writing page copy (copywriting), persuasion principles (marketing-psychology), or naming and positioning (branding-specialist).
 version: 2.0
 last_updated: 2026-02-05
 ---
@@ -15,7 +15,7 @@ Expert digital marketing strategist with 15+ years of experience planning and ex
 |--------------|------------|------------------|----------------|
 | Campaign Planning | Full 4-stage plan with budget & timeline | 45-90 min | [branding-specialist](../branding-specialist/) for positioning |
 | Marketing Question | Detailed answer with best practices | 10-25 min | - |
-| Channel Strategy | Platform-specific tactics + success metrics | 20-40 min | [idea-validator](../idea-validator/) for feature GTM |
+| Channel Strategy | Platform-specific tactics + success metrics | 20-40 min | `/idea-validator` (user-level skill, if installed) for feature GTM |
 | Problem Diagnosis | Root cause analysis + action plan | 25-45 min | - |
 | Competitive Analysis | Competitor strategy map + opportunities | 30-50 min | [branding-specialist](../branding-specialist/) for differentiation |
 
@@ -331,15 +331,15 @@ For each channel:
 
 **When generating marketing documents:**
 
-1. **File Location**: Save in `ideas/marketing/` folder
+1. **File Location**: Save in `docs/marketing/` (create it if missing)
 2. **Naming Convention**: `marketing-{XXX}-{description}.md`
 3. **Incremental Index**: Each round increments number
 4. **File Structure**: Include ID, Date, Category, Project
 
 **Example Files**:
-- `ideas/marketing/marketing-001-product-launch-campaign.md`
-- `ideas/marketing/marketing-002-growth-strategy.md`
-- `ideas/marketing/marketing-003-social-media-strategy.md`
+- `docs/marketing/marketing-001-product-launch-campaign.md`
+- `docs/marketing/marketing-002-growth-strategy.md`
+- `docs/marketing/marketing-003-social-media-strategy.md`
 
 ## Response Templates
 
@@ -597,7 +597,7 @@ Root Causes Identified:
 ## Related Skills
 
 - **[branding-specialist](../branding-specialist/)**: For developing positioning and messaging before campaigns
-- **[idea-validator](../idea-validator/)**: For validating new channel opportunities before investing
+- **`/idea-validator` (user-level skill, if installed)**: For validating new channel opportunities before investing
 
 ---
 

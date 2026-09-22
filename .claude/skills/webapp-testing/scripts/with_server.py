@@ -4,13 +4,13 @@ Start one or more servers, wait for them to be ready, run a command, then clean 
 
 Usage:
     # Single server
-    python scripts/with_server.py --server "npm run dev" --port 5173 -- python automation.py
-    python scripts/with_server.py --server "npm start" --port 3000 -- python test.py
+    python scripts/with_server.py --server "pnpm dev --port 3100" --port 3100 -- python automation.py
+    python scripts/with_server.py --server "pnpm start --port 3100" --port 3100 -- python test.py
 
     # Multiple servers
     python scripts/with_server.py \
-      --server "cd backend && python server.py" --port 3000 \
-      --server "cd frontend && npm run dev" --port 5173 \
+      --server "cd backend && python server.py" --port 3101 \
+      --server "cd frontend && pnpm dev --port 3100" --port 3100 \
       -- python test.py
 """
 
