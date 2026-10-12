@@ -1,18 +1,7 @@
 import { Resend } from 'resend';
+import type { EmailPayload, IEmailProvider } from '@/core/email/contracts';
 import { assertEnv } from '@/shared/config/assert-env';
 import { ExternalApiError } from '@/shared/errors';
-
-export interface EmailPayload {
-  to: string | string[];
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-}
-
-export interface IEmailProvider {
-  send(payload: EmailPayload): Promise<void>;
-}
 
 export class ResendProvider implements IEmailProvider {
   private client: Resend;

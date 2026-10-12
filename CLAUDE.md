@@ -55,7 +55,8 @@ O que está implementado e funcionando:
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
 | Sessão Supabase por cookie | `src/proxy.ts`, `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
-| Providers | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
+| Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
+| Portas que eles implementam | `src/core/{llm,email,billing}/contracts/index.ts` |
 | Webhook Polar com verificação de assinatura | `src/app/api/v1/webhooks/polar/route.ts` |
 | Gate de super-admin de plataforma | `supabase/migrations/20260827000000_platform_admin.sql`, `src/core/platform/`, `src/infrastructure/database/platform-admin-session.ts` |
 | i18n cookie-based (pt-BR/pt/en, sem prefixo de URL) | `src/shared/i18n/` |

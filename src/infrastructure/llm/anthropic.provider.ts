@@ -1,26 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { ILLMProvider, LLMMessage, LLMOptions } from '@/core/llm/contracts';
 import { ConfigurationError, ExternalApiError } from '@/shared/errors';
-
-export interface LLMOptions {
-  systemPrompt?: string;
-  maxTokens: number;
-  model?: string;
-  outputSchema?: Record<string, unknown>;
-  signal?: AbortSignal;
-}
-
-export interface ILLMProvider {
-  complete(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    options: LLMOptions
-  ): Promise<string>;
-
-  stream(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    options: LLMOptions,
-    onChunk: (chunk: string) => void
-  ): Promise<string>;
-}
 
 export class AnthropicProvider implements ILLMProvider {
   private client: Anthropic;
@@ -32,7 +12,7 @@ export class AnthropicProvider implements ILLMProvider {
   }
 
   async complete(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    messages: LLMMessage[],
     { systemPrompt, maxTokens, model: modelOverride, outputSchema, signal }: LLMOptions
   ): Promise<string> {
     const model = modelOverride ?? (maxTokens <= 5000 ? 'claude-sonnet-4-6' : 'claude-opus-4-8');
@@ -81,7 +61,7 @@ export class AnthropicProvider implements ILLMProvider {
   }
 
   async stream(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    messages: LLMMessage[],
     { systemPrompt, maxTokens, model: modelOverride, signal }: LLMOptions,
     onChunk: (chunk: string) => void
   ): Promise<string> {

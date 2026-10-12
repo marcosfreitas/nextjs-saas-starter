@@ -1,24 +1,12 @@
 import { Polar } from '@polar-sh/sdk';
+import type {
+  CheckoutSession,
+  CreateCheckoutParams,
+  CreatePortalSessionParams,
+  IBillingProvider,
+} from '@/core/billing/contracts';
 import { assertEnv } from '@/shared/config/assert-env';
 import { ExternalApiError } from '@/shared/errors';
-
-export interface CheckoutSession {
-  url: string;
-}
-
-export interface IBillingProvider {
-  createCheckout(params: {
-    userId: string;
-    email: string;
-    productId: string;
-    successUrl: string;
-  }): Promise<CheckoutSession>;
-
-  createPortalSession(params: {
-    externalCustomerId: string;
-    returnUrl: string;
-  }): Promise<{ url: string }>;
-}
 
 export class PolarProvider implements IBillingProvider {
   private client: Polar;
@@ -27,12 +15,12 @@ export class PolarProvider implements IBillingProvider {
     this.client = new Polar({ accessToken: assertEnv('POLAR_ACCESS_TOKEN') });
   }
 
-  async createCheckout({ userId, email, productId, successUrl }: {
-    userId: string;
-    email: string;
-    productId: string;
-    successUrl: string;
-  }): Promise<CheckoutSession> {
+  async createCheckout({
+    userId,
+    email,
+    productId,
+    successUrl,
+  }: CreateCheckoutParams): Promise<CheckoutSession> {
     try {
       const checkout = await this.client.checkouts.create({
         products: [productId],
@@ -52,10 +40,10 @@ export class PolarProvider implements IBillingProvider {
     }
   }
 
-  async createPortalSession({ externalCustomerId, returnUrl }: {
-    externalCustomerId: string;
-    returnUrl: string;
-  }): Promise<{ url: string }> {
+  async createPortalSession({
+    externalCustomerId,
+    returnUrl,
+  }: CreatePortalSessionParams): Promise<{ url: string }> {
     try {
       const session = await this.client.customerSessions.create({
         externalCustomerId,

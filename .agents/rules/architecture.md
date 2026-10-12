@@ -23,11 +23,21 @@ Pure business logic. **No framework imports, no Supabase, no Next.js, no HTTP.**
 
 ```
 core/
-└── {domain}/
-    ├── contracts/    # Repository and service interfaces
-    ├── entities/     # Domain objects (plain TypeScript)
-    └── services/     # Use cases — one class, one public method: execute()
+├── {domain}/
+│   ├── contracts/    # Repository and service interfaces
+│   ├── entities/     # Domain objects (plain TypeScript)
+│   └── services/     # Use cases — one class, one public method: execute()
+└── {capability}/
+    └── contracts/    # Outbound port: llm/, email/, billing/
 ```
+
+A port is an interface the domain declares and an outer layer fills. It belongs
+in `core/` even when `core/` has no consumer for it yet: the point of the
+interface is that the domain owns the shape and the vendor does not. Declaring
+it next to the implementation inverts the dependency rule, because every
+consumer then has to import from `infrastructure/` to name the type it depends
+on, and swapping the vendor becomes a change to every call site instead of one
+import.
 
 ---
 
@@ -39,9 +49,9 @@ Concrete implementations of `core/` contracts.
 infrastructure/
 ├── database/       # Supabase client (client.ts, server.ts, admin.ts) + generated types
 ├── repositories/   # Implement core repository contracts
-├── llm/            # AnthropicProvider — implements ILLMProvider
-├── email/          # ResendProvider — implements IEmailProvider
-└── billing/        # PolarProvider — implements IBillingProvider
+├── llm/            # AnthropicProvider — implements core/llm/contracts
+├── email/          # ResendProvider — implements core/email/contracts
+└── billing/        # PolarProvider — implements core/billing/contracts
 ```
 
 ---
