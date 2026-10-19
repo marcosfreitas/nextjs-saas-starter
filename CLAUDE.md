@@ -57,6 +57,7 @@ O que está implementado e funcionando:
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
 | Portas que eles implementam | `src/core/{llm,email,billing}/contracts/index.ts` |
+| Erro de recusa do modelo (HTTP 200, `stop_reason: refusal`) | `LLMRefusalError` em `src/shared/errors/index.ts` |
 | Webhook Polar com verificação de assinatura | `src/app/api/v1/webhooks/polar/route.ts` |
 | Gate de super-admin de plataforma | `supabase/migrations/20260827000000_platform_admin.sql`, `src/core/platform/`, `src/infrastructure/database/platform-admin-session.ts` |
 | i18n cookie-based (pt-BR/pt/en, sem prefixo de URL) | `src/shared/i18n/` |
@@ -74,7 +75,7 @@ Diretórios que **existem mas estão vazios**. Os rules descrevem o padrão, nã
 
 1. **Poucos testes.** `jest.config.js` existe e funciona (ts-jest, jsdom por omissão, alias `@/`), mas só o gate de plataforma tem suíte. Um teste node puro opta por sair do jsdom com `@jest-environment node` no topo do arquivo.
 2. **Tipos do Supabase são placeholder.** `src/infrastructure/database/types.ts` declara `Tables: { [name: string]: GenericTable }` com `Record<string, unknown>`, ou seja, o cliente tipado não valida nada. Gere os tipos reais (`supabase gen types typescript --project-id <id>`) assim que houver schema. A CLI do Supabase não é dependência do projeto; use `pnpm dlx supabase`.
-3. **Modelos Anthropic desatualizados.** `anthropic.provider.ts` fixa `claude-sonnet-4-6` e `claude-opus-4-8` como padrão. A família atual é Claude 5 (`claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`). Atualize antes de usar o provider para valer.
+3. **O SDK da Anthropic está atrás dos modelos.** Os IDs no `anthropic.provider.ts` são os atuais (`claude-opus-5-5` por omissão), mas a união `Model` do `@anthropic-ai/sdk@0.121.0` não lista a família 5.5: eles passam pelo fallback `(string & {})` do tipo, não por estarem declarados. Funciona, e você perde o autocomplete e a checagem de ID errado. Suba o SDK antes de usar o provider para valer.
 4. **`.nvmrc` diz 22, a máquina roda 24.** Node 24 é o padrão atual da Vercel; o `.nvmrc` é que está atrasado.
 5. **A migration de `platform_admins` é a única versionada.** A tabela `public.users` que `UserRepository` consulta não é criada por migration nenhuma: o schema base do Supabase só existe no projeto remoto. A cadeia de migrations começa no meio.
 6. **Três dependências seguram versão de propósito**, todas travadas pelo mesmo ecossistema de lint:

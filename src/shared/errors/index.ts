@@ -78,6 +78,23 @@ export class ExternalApiError extends AppError {
   }
 }
 
+/**
+ * The model declined the request on policy grounds. This arrives as HTTP 200
+ * with `stop_reason: "refusal"`, so it is not an API failure and must not be
+ * reported as one: the integration is healthy and the content was refused.
+ * 422 rather than 502 for the same reason.
+ */
+export class LLMRefusalError extends AppError {
+  constructor(category: string | null, explanation?: string | null) {
+    super(
+      'LLM_REFUSAL',
+      `The model declined this request${category ? ` (${category})` : ''}.`,
+      422,
+      explanation ? { explanation } : undefined
+    );
+  }
+}
+
 export class DatabaseError extends AppError {
   constructor(message: string, details?: unknown) {
     super('DATABASE_ERROR', `Database operation failed: ${message}`, 500, details);
