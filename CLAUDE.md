@@ -53,6 +53,7 @@ O que está implementado e funcionando:
 | Envelope de API (`ok` / `created` / `handleError`) | `src/shared/utils/api-handler.ts` |
 | Hierarquia de erros tipados | `src/shared/errors/index.ts` |
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
+| Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
 | Sessão Supabase por cookie | `src/proxy.ts`, `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
@@ -73,7 +74,7 @@ Diretórios que **existem mas estão vazios**. Os rules descrevem o padrão, nã
 
 ## Lacunas conhecidas (não são bugs, são pendências do template)
 
-1. **Poucos testes.** `jest.config.js` existe e funciona (ts-jest, jsdom por omissão, alias `@/`), mas só o gate de plataforma tem suíte. Um teste node puro opta por sair do jsdom com `@jest-environment node` no topo do arquivo.
+1. **Poucos testes.** `jest.config.js` existe e funciona (ts-jest, jsdom por omissão, alias `@/`), mas só o gate de plataforma e o `html.ts` têm suíte. Um teste node puro opta por sair do jsdom com `@jest-environment node` no topo do arquivo.
 2. **Tipos do Supabase são placeholder.** `src/infrastructure/database/types.ts` declara `Tables: { [name: string]: GenericTable }` com `Record<string, unknown>`, ou seja, o cliente tipado não valida nada. Gere os tipos reais (`supabase gen types typescript --project-id <id>`) assim que houver schema. A CLI do Supabase não é dependência do projeto; use `pnpm dlx supabase`.
 3. **O SDK da Anthropic está atrás dos modelos.** Os IDs no `anthropic.provider.ts` são os atuais (`claude-opus-5-5` por omissão), mas a união `Model` do `@anthropic-ai/sdk@0.121.0` não lista a família 5.5: eles passam pelo fallback `(string & {})` do tipo, não por estarem declarados. Funciona, e você perde o autocomplete e a checagem de ID errado. Suba o SDK antes de usar o provider para valer.
 4. **`.nvmrc` diz 22, a máquina roda 24.** Node 24 é o padrão atual da Vercel; o `.nvmrc` é que está atrasado.

@@ -13,6 +13,10 @@ export interface EmailPayload {
    * interpolated value must already be escaped by the caller. Building it with
    * a template string and a raw user value is a stored-XSS path into whatever
    * client renders the message.
+   *
+   * Build it with `renderTemplate` from `@/shared/utils/html`, which escapes
+   * every value it interpolates. `core/` cannot import that helper, and should
+   * not: escaping is the caller's job, right where the string is assembled.
    */
   html: string;
   text?: string;
