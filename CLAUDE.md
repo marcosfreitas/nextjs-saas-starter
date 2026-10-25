@@ -54,6 +54,7 @@ O que está implementado e funcionando:
 | Hierarquia de erros tipados | `src/shared/errors/index.ts` |
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
 | Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
+| GET para URL que terceiros influenciam (sem decodificar Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
 | Sessão Supabase por cookie | `src/proxy.ts`, `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
@@ -83,6 +84,13 @@ Diretórios que **existem mas estão vazios**. Os rules descrevem o padrão, nã
    - `eslint` fica no 9. O 10 remove `context.getFilename()`, e o `eslint-plugin-react@7.37.5` (dep transitiva do `eslint-config-next`) ainda chama esse método: `pnpm lint` morre com `contextOrFilename.getFilename is not a function`. O npm já marca o 9.39.5 como sem suporte, então isto é dívida com prazo.
    - `typescript` fica no 6. O `typescript-eslint@8.68` recusa TS 7.0 explicitamente ("does not support TS 7.0"), e o ts-jest também quebra. Só `tsc` e `next build` passam. Rastreamento: typescript-eslint#10940, que fala em suportar TS >= 7.1.
    - `@types/node` fica no 25. Subir pro 26 aumenta o descasamento com o runtime: a máquina roda Node 24 e a Vercel também. O ajuste certo é ir pra `^24` e corrigir o `.nvmrc` junto, não subir.
+
+### Brotli (CVE-2026-111497)
+
+Node 22.23.4, 24.22.1 e 26.12.1 corrigem o decoder de Brotli. Enquanto a plataforma não estiver nessas versões, valem duas regras de código:
+
+- **Resposta de URL que o usuário ou terceiro influencia:** use `safeGet`, nunca `fetch`. O `fetch` embutido decodifica `br` sozinho e antes do seu código ver a resposta. `safeGet` recusa qualquer `Content-Encoding` fora de identity, gzip e deflate antes de ler o corpo, e não segue redirect. Remover `br` do `Accept-Encoding` não basta: o servidor responde `br` mesmo assim.
+- **Corpo de request:** o Next 16.4.3 (route handlers) e o Fastify não decodificam `br` por omissão; o Express 5 e o body-parser 2 decodificam. Se um dia entrar Express aqui, recuse `br` no middleware (`inflate: false` dá 415 para `br` e `gzip`) antes de qualquer parser.
 
 ## Comandos
 
