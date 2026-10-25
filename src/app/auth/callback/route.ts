@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/infrastructure/database/server';
 import { isOnboarded } from '@/infrastructure/database/profile';
+import { safeNext } from '@/shared/utils/safe-next';
 
+/**
+ * Login links only.
+ *
+ * The PKCE `?code=` carries no type, so this route cannot tell a login from a
+ * recovery or invite link, and exchanging the code turns either into a session.
+ * The separation therefore lives in what is sent here: recovery, invite and
+ * email-change links go to /auth/confirm, which verifies `token_hash` with an
+ * explicit type. Never set this route as `redirectTo` for those flows, and never
+ * set it as the project's `site_url`, which is where links land when their
+ * `redirect_to` is not allowed.
+ */
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get('code');
-  // Only allow same-origin relative paths — reject protocol-relative (`//evil`)
-  // or backslash-tricks to prevent open redirects.
-  const nextParam = searchParams.get('next') ?? '/dashboard';
-  const next =
-    nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/\\')
-      ? nextParam
-      : '/dashboard';
+  const next = safeNext(searchParams.get('next'));
 
   if (code) {
     const supabase = await createClient();

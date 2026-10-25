@@ -29,6 +29,8 @@ if (!user) redirect('/auth/sign-in');
 
 `src/proxy.ts` sends any signed-in request whose profile is not onboarded to `/onboarding`, except `/onboarding`, `/auth/*` and `/api/*` (`src/shared/utils/onboarding-gate.ts`). A profile that cannot be read counts as not onboarded.
 
+**Only login codes go to the callback.** `/auth/callback` exchanges `?code=` and nothing else. The PKCE code carries no type, so a callback that exchanges any code turns a recovery or invite link into a session. Recovery, invite and email-change links go to `/auth/confirm`, which verifies `token_hash` with an explicit type from an allowlist (`email`, `email_change` today). `recovery` and `invite` are not allowed there until their flow sets the password before signing anyone in. Never set `/auth/callback` as `site_url`.
+
 **No password door.** `supabase/migrations/20261025170000_auth_no_passwords.sql` blanks `encrypted_password` on every insert and update. The Supabase email provider accepts `POST /auth/v1/signup` with a password from the public key whatever the UI shows, and turning confirmation on does not close it. Any future password feature must drop that trigger first.
 
 ## Adding OAuth
