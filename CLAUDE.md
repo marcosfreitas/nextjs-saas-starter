@@ -55,6 +55,7 @@ O que está implementado e funcionando:
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
 | Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
 | GET para URL que terceiros influenciam (sem decodificar Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
+| Cadastro só por link, sem senha, onboarding e consentimento | `src/app/onboarding/`, `src/proxy.ts`, `src/app/auth/callback/route.ts`, `src/infrastructure/database/profile.ts`, `supabase/migrations/20261025{170000,180000}_*.sql` |
 | Sessão Supabase por cookie | `src/proxy.ts`, `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |

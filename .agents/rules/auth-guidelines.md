@@ -21,10 +21,15 @@ const user = await getCurrentUserOrNull();
 if (!user) redirect('/auth/sign-in');
 ```
 
-**Sign-in flow:**
-1. User submits email → `supabase.auth.signInWithOtp()`
+**Sign-in flow (one field, no password anywhere):**
+1. User submits email → `supabase.auth.signInWithOtp()` (creates the account on first use)
 2. Email link → `/auth/callback?code=...`
-3. `exchangeCodeForSession(code)` → redirect to `/dashboard`
+3. `exchangeCodeForSession(code)`, then: profile onboarded → `/dashboard`; not onboarded → `/onboarding`
+4. `/onboarding` records the terms acceptance in `public.consents` and sets `profiles.onboarded_at`
+
+`src/proxy.ts` sends any signed-in request whose profile is not onboarded to `/onboarding`, except `/onboarding`, `/auth/*` and `/api/*` (`src/shared/utils/onboarding-gate.ts`). A profile that cannot be read counts as not onboarded.
+
+**No password door.** `supabase/migrations/20261025170000_auth_no_passwords.sql` blanks `encrypted_password` on every insert and update. The Supabase email provider accepts `POST /auth/v1/signup` with a password from the public key whatever the UI shows, and turning confirmation on does not close it. Any future password feature must drop that trigger first.
 
 ## Adding OAuth
 ```typescript
