@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { timedFetch } from '@/infrastructure/database/timed-fetch';
+import { isOnboarded } from '@/infrastructure/database/profile';
+import { isOnboardingExempt } from '@/shared/utils/onboarding-gate';
 
 export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req });
@@ -23,7 +25,17 @@ export async function proxy(req: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user && !isOnboardingExempt(req.nextUrl.pathname)) {
+    if (!(await isOnboarded(supabase, user.id))) {
+      const redirect = NextResponse.redirect(new URL('/onboarding', req.url));
+      // Carry over the cookies the refresh just set, or the session is lost on redirect.
+      for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+      return redirect;
+    }
+  }
+
   return response;
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/infrastructure/database/server';
+import { isOnboarded } from '@/infrastructure/database/profile';
 
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
@@ -15,7 +16,11 @@ export async function GET(req: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      const onboarded = user ? await isOnboarded(supabase, user.id) : false;
+      return NextResponse.redirect(`${origin}${onboarded ? next : '/onboarding'}`);
+    }
   }
 
   return NextResponse.redirect(`${origin}/auth/sign-in?error=auth_failed`);
