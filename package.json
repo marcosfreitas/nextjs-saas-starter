@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "check:auth": "node scripts/check-auth-config.mjs",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },
