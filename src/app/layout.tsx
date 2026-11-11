@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 import { Toaster } from 'sonner';
 import { QueryProvider } from '@/shared/providers/query-provider';
@@ -20,12 +19,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NextIntlClientProvider>
-          <QueryProvider>
-            {children}
-            <Toaster richColors />
-          </QueryProvider>
-        </NextIntlClientProvider>
+        {/*
+          No NextIntlClientProvider here on purpose. Without `messages` it serialized the
+          whole catalog into every page's HTML, and no client component reads it yet.
+          When one does, add the provider to that route group with `messages` limited to
+          the namespaces that group uses.
+        */}
+        <QueryProvider>
+          {children}
+          <Toaster richColors />
+        </QueryProvider>
       </body>
     </html>
   );
