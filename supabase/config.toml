@@ -1,0 +1,29 @@
+# Auth settings for the local Supabase stack, and the source of the email template.
+# The hosted project does not read this file: mirror these values in its Auth
+# settings (Dashboard or Management API), or the two drift apart.
+# Partial file: keys not listed here keep the Supabase CLI defaults.
+
+project_id = "nextjs-saas-starter"
+
+[auth]
+# Dev server port 3100 (3000 and 3001 belong to other projects on the same machine).
+site_url = "http://localhost:3100"
+enable_signup = true
+
+[auth.email]
+# Keep confirmation on. With it off, a signup gets a session before the address is proven.
+enable_confirmations = true
+# The code the user types in the same tab. Must match OTP_LENGTH in src/shared/utils/otp.ts.
+otp_length = 8
+# Seconds. Long enough to switch to the mail app, short enough to limit guessing.
+otp_exp = 900
+
+# Both templates carry {{ .Token }} and no link. A mail scanner that opens a link
+# consumes its one-time token, which would leave the code dead.
+[auth.email.template.confirmation]
+subject = "Your sign-in code"
+content_path = "./supabase/templates/code.html"
+
+[auth.email.template.magic_link]
+subject = "Your sign-in code"
+content_path = "./supabase/templates/code.html"

@@ -26,7 +26,7 @@
     "signOut": "Sign out",
     "email": "Email",
     "magicLink": "Continue with email",
-    "checkInbox": "Check your inbox for the sign-in link."
+    "checkInbox": "Check your inbox for the 8-digit sign-in code."
   },
   "dashboard": {
     "title": "Dashboard",

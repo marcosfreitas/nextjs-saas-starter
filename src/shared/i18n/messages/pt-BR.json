@@ -26,7 +26,7 @@
     "signOut": "Sair",
     "email": "E-mail",
     "magicLink": "Continuar com e-mail",
-    "checkInbox": "Verifique sua caixa de entrada para o link de acesso."
+    "checkInbox": "Verifique sua caixa de entrada para o código de acesso de 8 dígitos."
   },
   "dashboard": {
     "title": "Painel",

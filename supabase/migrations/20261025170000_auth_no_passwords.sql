@@ -1,6 +1,6 @@
 -- Auth: no account carries a usable password.
 --
--- The product signs in only through an email link (signInWithOtp). The Supabase
+-- The product signs in only through an email code (signInWithOtp + verifyOtp). The Supabase
 -- email provider, though, also accepts POST /auth/v1/signup with a password,
 -- straight from the public anon key, and there is no switch that turns password
 -- off and keeps the link on.
