@@ -55,7 +55,7 @@ O que está implementado e funcionando:
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
 | Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
 | GET para URL que terceiros influenciam (sem decodificar Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
-| Cadastro e login por código de 8 dígitos no e-mail, sem senha, sem link, onboarding e consentimento | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser`, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` |
+| Cadastro e login por código de 8 dígitos no e-mail, sem senha, sem link, onboarding e consentimento | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser` para API, `getCurrentUserForPage` para páginas do servidor, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` |
 | Sessão Supabase por cookie | `src/proxy.ts` (só renova o cookie), `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
