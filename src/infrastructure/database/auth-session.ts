@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from './server';
 import { isOnboarded } from './profile';
 import { OnboardingRequiredError, UnauthorizedError } from '@/shared/errors';
@@ -30,6 +31,25 @@ export async function getCurrentUser() {
   const supabase = await createClient();
   if (!(await isOnboarded(supabase, user.id))) throw new OnboardingRequiredError();
   return user;
+}
+
+/**
+ * For server-rendered pages, not API routes.
+ *
+ * The same check as `getCurrentUser()`, but a refusal becomes a redirect instead
+ * of a thrown error: no session goes to sign-in, not onboarded goes to /onboarding.
+ * A thrown OnboardingRequiredError on every first login would log a stack trace
+ * on the server each time. The check still runs on every page; only the way it
+ * refuses changes. Other errors still propagate.
+ */
+export async function getCurrentUserForPage() {
+  try {
+    return await getCurrentUser();
+  } catch (err) {
+    if (err instanceof UnauthorizedError) redirect('/auth/sign-in');
+    if (err instanceof OnboardingRequiredError) redirect('/onboarding');
+    throw err;
+  }
 }
 
 export async function getCurrentUserOrNull() {

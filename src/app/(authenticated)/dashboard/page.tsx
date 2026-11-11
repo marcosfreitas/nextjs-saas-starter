@@ -1,7 +1,7 @@
-import { getCurrentUser } from '@/infrastructure/database/auth-session';
+import { getCurrentUserForPage } from '@/infrastructure/database/auth-session';
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
+  const user = await getCurrentUserForPage();
 
   return (
     <main className="p-8">
