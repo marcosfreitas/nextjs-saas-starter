@@ -43,6 +43,15 @@ export function checkAuthConfig(config) {
     );
   }
 
+  // The allowlist decides where a link may land. A stale /auth/callback entry there
+  // would send a token to a route that no longer exists, with the token in the URL.
+  const allowList = typeof config.uri_allow_list === 'string' ? config.uri_allow_list : '';
+  if (allowList.includes(CALLBACK_PATH)) {
+    problems.push(
+      `uri_allow_list still includes ${CALLBACK_PATH}: remove it, the callback route is gone.`
+    );
+  }
+
   // The code step is only as good as the length and expiry it was derived for.
   // OTP_LENGTH in src/shared/utils/otp.ts is the app's copy of the same number.
   if (config.mailer_otp_length !== OTP_LENGTH) {

@@ -13,19 +13,9 @@ export async function completeOnboarding(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/sign-in');
 
-  // Consent first: a row per acceptance, append-only. If the profile update below
-  // fails, the user retries and the second row is the accurate record of that try.
-  const { error: consentError } = await supabase.from('consents').insert({
-    user_id: user.id,
-    document: 'terms',
-    version: TERMS_VERSION,
-  });
-  if (consentError) throw consentError;
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ onboarded_at: new Date().toISOString() })
-    .eq('id', user.id);
+  // One database function writes the consent row and sets onboarded_at together.
+  // The profile has no direct update grant, so the gate cannot be passed by hand.
+  const { error } = await supabase.rpc('complete_onboarding', { p_terms_version: TERMS_VERSION });
   if (error) throw error;
 
   redirect('/dashboard');

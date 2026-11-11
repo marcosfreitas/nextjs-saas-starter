@@ -56,3 +56,8 @@ test('a missing template counts as a failure, not a pass', () => {
   const problems = checkAuthConfig(rest);
   assert.match(problems.join('\n'), /mailer_templates_confirmation_content/);
 });
+
+test('flags the removed callback still in the redirect allowlist', () => {
+  const problems = checkAuthConfig({ ...GOOD, uri_allow_list: 'https://x.dev/auth/callback,https://x.dev/auth/confirm' });
+  assert.match(problems.join('\n'), /uri_allow_list still includes/);
+});

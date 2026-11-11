@@ -10,6 +10,13 @@
 -- OAuth carry a different authentication method and are not touched.
 --
 -- Data only, no schema change. Safe to run twice (the second run deletes nothing).
+--
+-- Before applying to a hosted project, count the sessions this will end:
+--   select count(*) from auth.sessions s
+--    where exists (select 1 from auth.mfa_amr_claims a
+--                   where a.session_id = s.id and a.authentication_method = 'password');
+-- Sessions with no amr claim at all are not matched here. Count those too, and decide
+-- on them before running, because this is irreversible.
 
 delete from auth.sessions s
 using auth.mfa_amr_claims a

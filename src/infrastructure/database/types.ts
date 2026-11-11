@@ -22,7 +22,7 @@ export interface Database {
   public: {
     Tables: { [name: string]: GenericTable };
     Views: { [name: string]: { Row: Record<string, unknown>; Relationships: [] } };
-    Functions: Record<string, never>;
+    Functions: { [name: string]: { Args: Record<string, unknown>; Returns: unknown } };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

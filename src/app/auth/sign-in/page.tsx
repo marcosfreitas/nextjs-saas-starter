@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/infrastructure/database/client';
 import { isValidOtpCode, normalizeOtpCode, OTP_LENGTH } from '@/shared/utils/otp';
 
@@ -14,13 +14,25 @@ const RESEND_SECONDS = 60;
  * attempts per client IP. From a server action every attempt would share the
  * host's egress IPs, so one attacker could lock out everyone's code entry.
  */
+/** Page shell: useSearchParams needs a Suspense boundary during static rendering. */
 export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
+  );
+}
+
+function SignInForm() {
   const router = useRouter();
+  // /auth/confirm sends ?error=auth_failed when a link is expired or already used.
+  const linkFailed = useSearchParams().get('error') === 'auth_failed';
   const [supabase] = useState(() => createClient());
   const [email, setEmail] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setError] = useState<string | null>(null);
+  const error = errorMessage ?? (linkFailed ? 'That link is no longer valid. Enter your email to get a new code.' : null);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
