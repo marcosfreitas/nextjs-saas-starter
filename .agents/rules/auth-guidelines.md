@@ -1,7 +1,7 @@
 # Auth Guidelines
 
 ## Provider
-Supabase Auth — magic link (OTP) by default.
+Supabase Auth — email code (OTP, 8 digits) by default. No password, no link in the email. The decision and the reasons are in the shared note `decisions/email-link-signup-onboarding`.
 
 ## Session Management
 - `src/proxy.ts` — refreshes sessions on every request via cookie exchange (Next.js proxy, formerly middleware)
@@ -10,34 +10,37 @@ Supabase Auth — magic link (OTP) by default.
 
 ## Usage
 
-**Protected API route:**
+**Protected API route or server action:**
 ```typescript
-const user = await getCurrentUser(); // throws UnauthorizedError if not signed in
+const user = await getCurrentUser(); // UnauthorizedError if not signed in; OnboardingRequiredError if terms not accepted
 ```
+`getCurrentUser()` is the one base check every door calls. It reads `profiles.onboarded_at` in the same request, so a route cannot skip onboarding by calling the database itself.
 
-**Protected page (layout):**
-```typescript
-const user = await getCurrentUserOrNull();
-if (!user) redirect('/auth/sign-in');
-```
+**Own profile read only:** `getSessionUser()` checks the session and nothing else. It is exempt because the user needs their own profile to see where they stand. Use it for nothing else.
 
-**Sign-in flow (one field, no password anywhere):**
-1. User submits email → `supabase.auth.signInWithOtp()` (creates the account on first use)
-2. Email link → `/auth/callback?code=...`
-3. `exchangeCodeForSession(code)`, then: profile onboarded → `/dashboard`; not onboarded → `/onboarding`
-4. `/onboarding` records the terms acceptance in `public.consents` and sets `profiles.onboarded_at`
+**Protected page (group layout):** the layout in `src/app/(authenticated)/layout.tsx` redirects: no session to `/auth/sign-in`, not onboarded to `/onboarding`. It only redirects, never throws. Pages inside the group still call `getCurrentUser()` for their data.
 
-`src/proxy.ts` sends any signed-in request whose profile is not onboarded to `/onboarding`, except `/onboarding`, `/auth/*` and `/api/*` (`src/shared/utils/onboarding-gate.ts`). A profile that cannot be read counts as not onboarded.
+**Sign-in flow (one field, then the code, in the same tab):**
+1. User submits email → `supabase.auth.signInWithOtp({ email })` from the browser (`src/app/auth/sign-in/page.tsx`). It creates the account on first use. No `emailRedirectTo`.
+2. The email carries `{{ .Token }}` (8 digits) and no link (`supabase/templates/code.html`, wired in `supabase/config.toml`).
+3. User types the code → `supabase.auth.verifyOtp({ email, token, type: 'email' })`, also from the browser. Verifying on the server would share GoTrue's per-IP attempt limit across every user.
+4. The session cookie is set; the page goes to `/dashboard`. The authenticated layout sends a profile that is not onboarded to `/onboarding`.
+5. `/onboarding` records the terms acceptance in `public.consents` and sets `profiles.onboarded_at`
 
-**Only login codes go to the callback.** `/auth/callback` exchanges `?code=` and nothing else. The PKCE code carries no type, so a callback that exchanges any code turns a recovery or invite link into a session. Recovery, invite and email-change links go to `/auth/confirm`, which verifies `token_hash` with an explicit type from an allowlist (`email`, `email_change` today). `recovery` and `invite` are not allowed there until their flow sets the password before signing anyone in. Never set `/auth/callback` as `site_url`.
+**The gate is the authenticated layout, not the proxy.** `src/proxy.ts` only refreshes the session cookie, with `getClaims()`, and makes no table read per navigation. Outside the `(authenticated)` group are `/onboarding`, terms, privacy, `/auth/*` (token routes), and metadata routes, so none of them can be swallowed by a gate. A profile that cannot be read counts as not onboarded.
+
+**No login callback route.** The template has none: a code never travels in a URL. A route that exchanges `?code=` would turn a recovery or invite link into a session, because the PKCE code carries no type. Recovery, invite and email-change links go to `/auth/confirm`, which verifies `token_hash` with an explicit type from an allowlist (`email`, `email_change` today). `recovery` and `invite` are not allowed there until their flow sets the password before signing anyone in. Never set `/auth/callback` as `site_url`; it no longer exists, and `pnpm check:auth` flags it.
+
+**Migrating a project that still sends links** (order matters, because templates and code cannot change atomically): (a) templates carrying the code and the old link; (b) deploy the code screen; (c) templates with the code only; (d) once the old links have expired, remove the login callback route.
 
 **No password door.** `supabase/migrations/20261025170000_auth_no_passwords.sql` blanks `encrypted_password` on every insert and update. The Supabase email provider accepts `POST /auth/v1/signup` with a password from the public key whatever the UI shows, and turning confirmation on does not close it. Any future password feature must drop that trigger first.
 
 ## Adding OAuth
+OAuth needs a redirect target, so it brings back a callback route that the template does not have. Build it with the same rule as above: it exchanges only the code it asked for, and it is not `site_url`.
 ```typescript
 await supabase.auth.signInWithOAuth({
   provider: 'google',
-  options: { redirectTo: `${origin}/auth/callback` },
+  options: { redirectTo: `${origin}/auth/oauth/callback` },
 });
 ```
 

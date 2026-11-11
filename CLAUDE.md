@@ -12,7 +12,7 @@ O detalhe fica em `.agents/rules/`. Carregue o arquivo quando o assunto aparecer
 | Stack e versões | [`.agents/rules/tech-stack.md`](.agents/rules/tech-stack.md) |
 | Convenções de API, nomes, estilo | [`.agents/rules/project-guidelines.md`](.agents/rules/project-guidelines.md) |
 | Hierarquia de erros | [`.agents/rules/error-handling.md`](.agents/rules/error-handling.md) |
-| Auth (Supabase, magic link) | [`.agents/rules/auth-guidelines.md`](.agents/rules/auth-guidelines.md) |
+| Auth (Supabase, código por e-mail) | [`.agents/rules/auth-guidelines.md`](.agents/rules/auth-guidelines.md) |
 | Fluxo de trabalho / commits | [`.agents/rules/sdlc.md`](.agents/rules/sdlc.md) |
 | Segurança | [`.agents/rules/security-analysis.md`](.agents/rules/security-analysis.md) |
 
@@ -55,8 +55,8 @@ O que está implementado e funcionando:
 | Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
 | Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
 | GET para URL que terceiros influenciam (sem decodificar Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
-| Cadastro só por link, sem senha, onboarding e consentimento | `src/app/onboarding/`, `src/proxy.ts`, `src/app/auth/callback/route.ts`, `src/infrastructure/database/profile.ts`, `supabase/migrations/20261025{170000,180000}_*.sql` |
-| Sessão Supabase por cookie | `src/proxy.ts`, `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
+| Cadastro e login por código de 8 dígitos no e-mail, sem senha, sem link, onboarding e consentimento | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser`, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` |
+| Sessão Supabase por cookie | `src/proxy.ts` (só renova o cookie), `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
 | Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
 | Portas que eles implementam | `src/core/{llm,email,billing}/contracts/index.ts` |
