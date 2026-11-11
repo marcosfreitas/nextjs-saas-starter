@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-config.mjs",
+    "test:auth-config": "node --test scripts/check-auth-config.test.mjs",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },

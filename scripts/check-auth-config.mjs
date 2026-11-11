@@ -21,6 +21,10 @@
 
 const API_BASE = process.env.SUPABASE_API_BASE ?? 'https://api.supabase.com';
 const CALLBACK_PATH = '/auth/callback';
+const OTP_LENGTH = 8;
+const OTP_EXP_SECONDS = 900;
+const CODE_TOKEN = /\{\{\s*\.Token\s*\}\}/;
+const LINK_VARIABLE = /\{\{\s*\.(ConfirmationURL|SiteURL|RedirectTo)\s*\}\}/;
 
 /** Pure: returns the list of problems, empty when the config passes. */
 export function checkAuthConfig(config) {
@@ -37,6 +41,29 @@ export function checkAuthConfig(config) {
     problems.push(
       `site_url points at ${CALLBACK_PATH}: links with a redirect_to outside the allowlist would hand their token to the login callback. Point site_url at an inert page.`
     );
+  }
+
+  // The code step is only as good as the length and expiry it was derived for.
+  // OTP_LENGTH in src/shared/utils/otp.ts is the app's copy of the same number.
+  if (config.mailer_otp_length !== OTP_LENGTH) {
+    problems.push(
+      `mailer_otp_length is ${config.mailer_otp_length}, expected ${OTP_LENGTH}: the input and the attempt budget assume ${OTP_LENGTH} digits.`
+    );
+  }
+  if (config.mailer_otp_exp !== OTP_EXP_SECONDS) {
+    problems.push(
+      `mailer_otp_exp is ${config.mailer_otp_exp}, expected ${OTP_EXP_SECONDS}: the templates promise 15 minutes.`
+    );
+  }
+
+  // Both templates must carry the code and no link, or new accounts get the wrong email.
+  for (const key of ['mailer_templates_confirmation_content', 'mailer_templates_magic_link_content']) {
+    const body = typeof config[key] === 'string' ? config[key] : '';
+    if (!CODE_TOKEN.test(body) || LINK_VARIABLE.test(body)) {
+      problems.push(
+        `${key} must show {{ .Token }} and no link variable (ConfirmationURL, SiteURL, RedirectTo): a mail scanner that opens a link consumes its token and leaves the code dead.`
+      );
+    }
   }
 
   return problems;
@@ -62,7 +89,7 @@ async function main() {
 
   const problems = checkAuthConfig(await res.json());
   if (problems.length === 0) {
-    console.log('auth config passes: confirmation on, site_url is not the callback.');
+    console.log('auth config passes: confirmation on, site_url not the callback, 8-digit code for 900 s, code-only templates.');
     return;
   }
   for (const problem of problems) console.error(`FAIL ${problem}`);
