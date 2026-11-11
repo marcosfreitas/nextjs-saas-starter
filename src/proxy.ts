@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { timedFetch } from '@/infrastructure/database/timed-fetch';
-import { isOnboarded } from '@/infrastructure/database/profile';
-import { isOnboardingExempt } from '@/shared/utils/onboarding-gate';
 
+/**
+ * Keeps the session cookie fresh on every navigation. Nothing else.
+ *
+ * No table read and no redirect here: the onboarding gate lives in the
+ * authenticated layout and in `getCurrentUser()`. getClaims() is used instead of
+ * getUser() because it verifies the token locally when the project signs with an
+ * asymmetric key; otherwise it falls back to a getUser() call.
+ */
 export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req });
 
@@ -25,17 +31,7 @@ export async function proxy(req: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (user && !isOnboardingExempt(req.nextUrl.pathname)) {
-    if (!(await isOnboarded(supabase, user.id))) {
-      const redirect = NextResponse.redirect(new URL('/onboarding', req.url));
-      // Carry over the cookies the refresh just set, or the session is lost on redirect.
-      for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
-      return redirect;
-    }
-  }
-
+  await supabase.auth.getClaims();
   return response;
 }
 

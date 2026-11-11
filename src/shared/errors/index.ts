@@ -66,6 +66,17 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/**
+ * Signed in, but the account has not finished onboarding (terms not accepted).
+ * A separate code from FORBIDDEN so the client can send the user to /onboarding
+ * instead of showing a permission error.
+ */
+export class OnboardingRequiredError extends AppError {
+  constructor(message = 'Finish onboarding to continue.') {
+    super('ONBOARDING_REQUIRED', message, 403);
+  }
+}
+
 export class ConfigurationError extends AppError {
   constructor(variable: string) {
     super('CONFIGURATION_ERROR', `Missing required environment variable: ${variable}`, 500);
