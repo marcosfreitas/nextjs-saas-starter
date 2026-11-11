@@ -11,7 +11,8 @@
 --
 -- Data only, no schema change. Safe to run twice (the second run deletes nothing).
 --
--- Before applying to a hosted project, count the sessions this will end:
+-- This template has no users of its own, so a fresh clone deletes nothing. A project
+-- built from it that already has users should count the sessions this will end first:
 --   select count(*) from auth.sessions s
 --    where exists (select 1 from auth.mfa_amr_claims a
 --                   where a.session_id = s.id and a.authentication_method = 'password');
