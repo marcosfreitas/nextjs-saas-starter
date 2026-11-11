@@ -46,7 +46,11 @@ function SignInForm() {
     setError(null);
     const { error } = await supabase.auth.signInWithOtp({ email: address });
     if (error) {
-      setError('We could not send the code. Wait a minute and try again.');
+      setError(
+        error.status === 429
+          ? 'Too many codes requested. Wait a few minutes before trying again.'
+          : 'We could not send the code. Wait a minute and try again.'
+      );
       return false;
     }
     setCooldown(RESEND_SECONDS);
@@ -75,7 +79,11 @@ function SignInForm() {
     const { error } = await supabase.auth.verifyOtp({ email: sentTo, token: code, type: 'email' });
     setBusy(false);
     if (error) {
-      setError('That code is wrong or expired. Use the most recent code from the email.');
+      setError(
+        error.status === 429
+          ? 'Too many attempts. Wait a few minutes before trying again.'
+          : 'That code is wrong or expired. Use the most recent code from the email.'
+      );
       return;
     }
     // The session cookie is set now. The authenticated layout sends the user to
