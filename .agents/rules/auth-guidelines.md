@@ -1,3 +1,14 @@
+---
+paths:
+  - "src/app/auth/**"
+  - "src/app/onboarding/**"
+  - "src/app/(authenticated)/**"
+  - "src/infrastructure/database/**"
+  - "src/proxy.ts"
+  - "src/shared/utils/otp.ts"
+  - "supabase/**"
+---
+
 # Auth Guidelines
 
 ## Provider

@@ -1,5 +1,6 @@
 ---
 name: agentic-owasp-security
+disable-model-invocation: true
 description: Security audit skill for Node.js / TypeScript applications that build AI/agentic features, evaluated against the OWASP Top 10 for Agentic Applications 2026 (ASI01–ASI10). Use this skill whenever the user asks to audit, review, or check security of a Node.js app (Next.js, Express, NestJS, Fastify, AWS Lambda, Vite/SvelteKit/Remix server, Hono, etc.) that integrates AI agents, LLM APIs (OpenAI, Anthropic, Gemini, Bedrock, Mistral, etc.), RAG pipelines, tool-calling, MCP, A2A, or multi-agent workflows. Trigger even if the user only says "check my AI security", "audit the LLM integration", "is my agentic app secure?", or "review prompt injection risks". Produces a structured findings report with AIVSS / LLM Top 10 / Agentic T-code cross-mappings, saved to `docs/security/`.
 ---
 

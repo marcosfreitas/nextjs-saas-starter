@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/shared/errors/**"
+  - "src/shared/utils/api-handler.ts"
+  - "src/app/api/**"
+---
+
 # Error Handling
 
 ## Error hierarchy (`src/shared/errors/index.ts`)

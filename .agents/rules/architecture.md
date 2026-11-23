@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{ts,tsx}"
+---
+
 # Architecture — Next.js SaaS Starter
 
 ## Layer overview

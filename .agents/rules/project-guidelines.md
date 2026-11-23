@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/app/api/**"
+  - "src/core/**"
+  - "src/features/**"
+---
+
 # Project Guidelines
 
 ## API Patterns

@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/app/api/**"
+  - "src/infrastructure/**"
+  - "src/proxy.ts"
+  - "supabase/**"
+---
+
 # Security Guidelines
 
 ## API Security

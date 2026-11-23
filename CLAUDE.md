@@ -4,17 +4,7 @@ Boilerplate SaaS em Next.js 16 / React 19, organizado em DDD + Clean Architectur
 
 ## Regras detalhadas
 
-O detalhe fica em `.agents/rules/`. Carregue o arquivo quando o assunto aparecer, não antes.
-
-| Assunto | Arquivo |
-|---------|---------|
-| Camadas e regra de dependência | [`.agents/rules/architecture.md`](.agents/rules/architecture.md) |
-| Stack e versões | [`.agents/rules/tech-stack.md`](.agents/rules/tech-stack.md) |
-| Convenções de API, nomes, estilo | [`.agents/rules/project-guidelines.md`](.agents/rules/project-guidelines.md) |
-| Hierarquia de erros | [`.agents/rules/error-handling.md`](.agents/rules/error-handling.md) |
-| Auth (Supabase, código por e-mail) | [`.agents/rules/auth-guidelines.md`](.agents/rules/auth-guidelines.md) |
-| Fluxo de trabalho / commits | [`.agents/rules/sdlc.md`](.agents/rules/sdlc.md) |
-| Segurança | [`.agents/rules/security-analysis.md`](.agents/rules/security-analysis.md) |
+As regras ficam em `.agents/rules/` e chegam ao Claude por `.claude/rules/`, que é um symlink para essa pasta. Cada arquivo tem um bloco `paths` no topo, e a regra só entra no contexto quando o Claude mexe em arquivo que casa com o padrão. Não é preciso abrir o arquivo manualmente. Ao criar regra nova, dê o `paths` dela no frontmatter. Regra sem `paths` carrega em toda sessão, então use só para o que vale em todo lugar (hoje: `sdlc.md` e `tech-stack.md`).
 
 Skills ficam em dois lugares. Cinco têm a fonte em `.agents/skills/` (frontend-design, security-review, copywriting, marketing-psychology, vercel-react-best-practices), e `.claude/skills/` só tem um symlink para cada uma: edite a fonte, nunca pelo symlink. As outras oito (orc, interface-design, theme-factory, documentation-organizer, webapp-testing, agentic-owasp-security, branding-specialist, marketing-specialist) existem apenas em `.claude/skills/`, que é a fonte delas. Todas são cópias vendorizadas: nada as atualiza sozinho.
 
