@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Copy the template's agent files (rules, the orc skill) into a project built from it.
+#
+# Run it from the root of the TARGET project:
+#   bash ~/Projects/Web/nextjs-saas-starter/scripts/sync-agent-files.sh           # shows the plan, writes nothing
+#   bash ~/Projects/Web/nextjs-saas-starter/scripts/sync-agent-files.sh --apply   # copies
+#
+# What it never does:
+# - It never overwrites a file the project has customised. A target file is replaced
+#   only when its content is byte-identical to some version this template has shipped
+#   (checked against the template's git history). Anything else is reported as
+#   CUSTOMISED and left alone, to be merged by hand.
+# - It never touches files the template does not ship: project-specific rules, skills
+#   and notes stay as they are.
+# - It never edits CLAUDE.md.
+#
+# Copies are plain `cp`, so the result is the template's file, not a rewrite of it.
+
+set -euo pipefail
+
+TEMPLATE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TARGET="$(pwd)"
+APPLY=0
+[ "${1:-}" = "--apply" ] && APPLY=1
+
+if [ "$TARGET" = "$TEMPLATE" ]; then
+  echo "Run this from the target project, not from the template." >&2
+  exit 2
+fi
+if [ ! -d "$TARGET/.git" ] && [ ! -f "$TARGET/.git" ]; then
+  echo "$TARGET is not a git repository root. Run from the project root." >&2
+  exit 2
+fi
+
+# Files the template ships and keeps in sync. Rules are listed from disk so a new
+# rule is picked up without editing this script.
+FILES=()
+while IFS= read -r f; do FILES+=("$f"); done < <(cd "$TEMPLATE" && ls .agents/rules/*.md)
+FILES+=(".claude/skills/orc/SKILL.md" ".claude/skills/agentic-owasp-security/SKILL.md")
+
+# True when the target file equals any version of this path in the template's history.
+matches_template_history() {
+  local rel="$1" hash
+  hash="$(git hash-object "$TARGET/$rel")"
+  git -C "$TEMPLATE" log --format=%H -- "$rel" | while read -r commit; do
+    if [ "$(git -C "$TEMPLATE" rev-parse "$commit:$rel" 2>/dev/null)" = "$hash" ]; then
+      echo yes
+      break
+    fi
+  done | grep -q yes
+}
+
+copied=0; customised=0; same=0; skipped=0
+
+for rel in "${FILES[@]}"; do
+  src="$TEMPLATE/$rel"; dst="$TARGET/$rel"
+
+  # A rule is only added to a project that already keeps rules in .agents/rules.
+  # A skill is only updated where the project already has that skill.
+  case "$rel" in
+    .agents/rules/*) [ -d "$TARGET/.agents/rules" ] || { skipped=$((skipped+1)); continue; } ;;
+    *)               [ -f "$dst" ] || { echo "SKIP        $rel (the project does not have this skill)"; skipped=$((skipped+1)); continue; } ;;
+  esac
+
+  if [ ! -e "$dst" ]; then
+    echo "NEW         $rel"
+    [ $APPLY = 1 ] && cp "$src" "$dst"
+    copied=$((copied+1))
+  elif cmp -s "$src" "$dst"; then
+    same=$((same+1))
+  elif matches_template_history "$rel"; then
+    echo "UPDATE      $rel"
+    [ $APPLY = 1 ] && cp "$src" "$dst"
+    copied=$((copied+1))
+  else
+    echo "CUSTOMISED  $rel (differs from every template version: left alone, merge by hand)"
+    customised=$((customised+1))
+  fi
+done
+
+# Make the rules reachable: Claude Code reads .claude/rules, not .agents/rules.
+if [ -d "$TARGET/.agents/rules" ]; then
+  if [ -L "$TARGET/.claude/rules" ]; then
+    echo "LINK        .claude/rules is already a symlink"
+  elif [ ! -e "$TARGET/.claude/rules" ]; then
+    echo "LINK        .claude/rules -> ../.agents/rules"
+    if [ $APPLY = 1 ]; then mkdir -p "$TARGET/.claude"; ln -s ../.agents/rules "$TARGET/.claude/rules"; fi
+  else
+    # A real directory may hold rules that exist nowhere else: link file by file.
+    for f in "$TARGET"/.agents/rules/*.md; do
+      name="$(basename "$f")"
+      if [ ! -e "$TARGET/.claude/rules/$name" ] && [ ! -L "$TARGET/.claude/rules/$name" ]; then
+        echo "LINK        .claude/rules/$name -> ../../.agents/rules/$name"
+        [ $APPLY = 1 ] && ln -s "../../.agents/rules/$name" "$TARGET/.claude/rules/$name"
+      fi
+    done
+  fi
+fi
+
+echo
+echo "to copy: $copied   already current: $same   customised (kept): $customised   not applicable: $skipped"
+if [ $APPLY = 0 ]; then
+  echo "Plan only, nothing was written. Re-run with --apply."
+else
+  echo "Done. Review with: git status --short && git diff --stat"
+fi
+echo "Not touched: CLAUDE.md, and every rule or skill the template does not ship."
