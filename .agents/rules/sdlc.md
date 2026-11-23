@@ -2,8 +2,8 @@
 
 ## Sequence for every non-trivial change
 
-1. **Plan** — scope files and layers with `/plan` before implementing
-2. **Implement** — code; run `pnpm tsc --noEmit` before committing
+1. **Plan** — `/orc` first when the change opens or closes a phase or may touch a product non-negotiable; then scope files and layers in plan mode (`/plan`)
+2. **Implement** — code; run `pnpm typecheck` before committing
 3. **Review** — correctness, contracts, layer compliance, type safety, security
 4. **Commit** — one logical unit, conventional prefix, `Co-Authored-By` trailer
 5. **Push** — push after every commit
@@ -16,11 +16,25 @@
 - `chore:` — tooling, deps, config
 
 ## Before committing
+All four must pass. Always with a heap cap and a timeout, and jest on one worker:
+
 ```bash
-pnpm tsc --noEmit   # must pass
-pnpm lint           # must pass
-pnpm test           # must pass
+NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm typecheck
+NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm lint
+NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm test --runInBand
+NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm build
 ```
+
+When the change touches `supabase/`, also run the migrations from scratch on a local stack that is thrown away afterwards. Type checks and unit tests do not catch a SQL error, a missing grant or a broken function:
+
+```bash
+supabase start
+supabase db reset --local --no-seed   # applies every migration to an empty database
+# check grants and functions as the app's role (anon / authenticated), not as the owner
+supabase stop --no-backup             # removes the volumes: no state is kept between runs
+```
+
+On every dependency or security pass: `pnpm audit`, then `pnpm update` (stays inside the declared ranges, no major jump), then re-pin to the exact resolved versions. Name the runtime packages that moved in the commit message.
 
 ## Adding a new domain
 1. Create `src/core/{domain}/{contracts,entities,services}/`

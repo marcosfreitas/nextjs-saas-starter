@@ -31,10 +31,13 @@ paths:
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to the client
 
 ## Authentication
-- Magic link (OTP) via Supabase Auth by default
-- `getCurrentUser()` throws `UnauthorizedError` if not authenticated
-- `getCurrentUserOrNull()` for pages that handle both states
-- Proxy at `src/proxy.ts` refreshes sessions on every request
+- Email code (8 digits) via Supabase Auth by default. No password, no link in the email
+- API routes and server actions: `getCurrentUser()` throws `UnauthorizedError` (401) with no session and `OnboardingRequiredError` (403) before the terms are accepted
+- Server pages: `getCurrentUserForPage()` runs the same check and redirects instead of throwing
+- `getSessionUser()` skips the onboarding check. Only for reading one's own profile
+- `getCurrentUserOrNull()` for pages that handle both signed-in and anonymous visitors
+- Proxy at `src/proxy.ts` only refreshes the session cookie. No gate lives there
+- Detail: `auth-guidelines.md`
 
 ## Naming Conventions
 - Services: `{verb}{Noun}Service` — `GetUserService`, `CreateOrderService`

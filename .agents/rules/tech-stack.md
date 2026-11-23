@@ -14,7 +14,7 @@
 ## Backend / Data
 - **Supabase** — PostgreSQL, Auth, SSR
   - `@supabase/ssr` for server-side auth (cookies)
-  - Generated types at `src/infrastructure/database/types.ts`
+  - Types at `src/infrastructure/database/types.ts` (a permissive placeholder until generated from a real schema)
 - **Zod 4** — all input validation at API boundaries
 
 ## State Management
@@ -42,6 +42,11 @@
 ## Rate Limiting
 - **Upstash Redis** via `@upstash/ratelimit` + `@upstash/redis`
   - Helper at `src/shared/utils/rate-limit.ts`
+
+## Dependency versions
+- Direct dependencies are pinned to exact versions (no `^` or `~`); `.npmrc` sets `save-exact=true`. A range lets a fresh install pull a version published after the last review
+- Exact pins cover direct dependencies only. Installs in CI use `pnpm install --frozen-lockfile` so transitive versions stay as locked
+- `eslint` stays on 9, `typescript` on 6, `@types/node` on 25. The reason for each pin is in `CLAUDE.md`
 
 ## Testing
 - **Jest** + `ts-jest` + `@testing-library/react`

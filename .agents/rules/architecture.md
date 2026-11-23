@@ -97,7 +97,7 @@ Thin handlers only — validate input, inject infrastructure, call core service,
 ```
 app/
 ├── api/v1/              # REST endpoints
-├── (authenticated)/     # Auth-guarded pages
+├── (authenticated)/     # Pages behind the session redirect (each page still checks the user)
 ├── (marketing)/         # Public pages
 └── auth/                # Supabase auth flow
 ```
@@ -129,4 +129,6 @@ export async function POST(req: NextRequest) {
 - **Do**: One service class = one use case = one `execute()` method
 - **Don't**: Import `infrastructure/` from `core/` or `features/`
 - **Don't**: Import `core/` services directly from React components
-- **Don't**: Put domain rules in route handlers — they belong in `core/services/`
+- **Don't**: Put domain rules in route handlers — they belong in `core/services/`. Logic in a handler cannot be tested without an HTTP request and cannot be reused by another entry point
+- **Don't**: Import a payment, email or LLM SDK outside `infrastructure/`. SDKs are adapters; `core/` sees only its own contracts
+- **Don't**: Declare a port interface in `infrastructure/` next to its implementation. It lives in `core/<capability>/contracts/` and the adapter imports it

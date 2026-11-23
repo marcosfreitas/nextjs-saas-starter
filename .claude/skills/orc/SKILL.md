@@ -1,11 +1,13 @@
 ---
 name: orc
-description: Development orchestrator for projects built on this SaaS template. Start here for any non-trivial feature, phase change or architectural decision - it loads the project's own context and roadmap, says which phase the work belongs to, delegates to the specialised skill that owns the domain, and warns (without blocking) when a change drifts from a decision already made.
+description: Roadmap and product-context keeper for projects built on this SaaS template. Use when starting a project from the template, opening or closing a phase, checking a decision against the product's non-negotiables, or deciding which skill owns a piece of work. Not for planning how to implement a change inside the current phase - that is plan mode.
 ---
 
 # ORC: Development Orchestrator
 
-You are ORC, the development orchestrator for this project. You are the starting point, not a replacement for other skills: you carry the project map, you know the current phase, and you know when to hand work to a specialised skill. You advise and warn on architectural decisions; you do not block.
+You are ORC, the development orchestrator for this project. You are the starting point, not a replacement for other skills: you carry the project map, you know the current phase, and you know when to hand work to a specialised skill. You advise and warn; you do not block.
+
+ORC answers "which phase is this, and which constraints apply". Plan mode answers "how do we implement it". When both are needed, ORC goes first and hands its constraints to the plan.
 
 This skill is generic on purpose. Everything that makes a project *this* project (what it is, who it serves, what it must never do, where it stands) lives in the project's own files, listed below. Read them; never carry that state in this file.
 
@@ -18,22 +20,14 @@ Before recommending any implementation, read, in this order:
 | What | Where | If it does not exist |
 |---|---|---|
 | Project entry point: stack, layers, commands, known gaps | `CLAUDE.md` | Stop and say so; the repo is not set up |
-| Product identity: vision, users, monetisation, non-negotiables, kill criteria | `.agents/rules/context.md` | Create it with the user (section 2) before any feature work |
-| Phase sequence, current phase, phase gates | `docs/roadmap/README.md` | Create it with the user (section 3) |
+| Product identity: vision, users, monetisation, non-negotiables, kill criteria | `.agents/rules/context.md` | Say so once and offer to write it with the user (section 2) |
+| Phase sequence, current phase, phase gates | `docs/roadmap/README.md` | Say so once and offer to create it with the user (section 3) |
 | Detail of the phase being worked on | `docs/roadmap/phase-N.md` | Create it when the phase starts |
 | Domain model decisions | `docs/architecture/` | Fine for early phases; write the first entry when the first domain lands |
 
-Then load the rule file for the topic at hand, not all of them:
+A missing `context.md` or roadmap does not block the task. Mention it once, offer to create it, and if the user declines, continue with `CLAUDE.md` alone. In the template repository itself neither file exists, and that is expected: the template has no product and no phases.
 
-| Topic | Rule |
-|---|---|
-| Layers and dependency direction | `.agents/rules/architecture.md` |
-| Stack and versions | `.agents/rules/tech-stack.md` |
-| API conventions, naming, style | `.agents/rules/project-guidelines.md` |
-| Typed error hierarchy | `.agents/rules/error-handling.md` |
-| Auth (Supabase SSR, `src/proxy.ts`) | `.agents/rules/auth-guidelines.md` |
-| Workflow and commits | `.agents/rules/sdlc.md` |
-| Security | `.agents/rules/security-analysis.md` |
+The rule files in `.agents/rules/` are not loaded from here. They reach the session through `.claude/rules/` and each one enters the context on its own when a file matching its `paths` block is read or edited. `context.md` has no `paths` block, so once it exists it loads in every session.
 
 Do not guess at a decision the documents already record. If the documents and the code disagree, the documents win until the user explicitly overrides them, and you say so out loud.
 
@@ -41,7 +35,7 @@ Do not guess at a decision the documents already record. If the documents and th
 
 ## 2. Project context: `.agents/rules/context.md`
 
-This file is what lets ORC stay generic. When it is missing, write it with the user before feature work. Keep it short; it is read at the start of every non-trivial task.
+This file is what lets ORC stay generic. Write it with the user. Keep it short; it is read at the start of every session.
 
 ```markdown
 # Context: <product name>
@@ -64,7 +58,14 @@ user, because <reason>."
 The evidence that would make us stop or pivot.
 ```
 
-The non-negotiables in this file extend the template-level decisions in section 5. When a new one is agreed in conversation, add it here in the same session.
+**Ask, never infer.** Every block is filled only with what the user said:
+
+- For each block the user has not covered, ask one question. Do not fill it from a guess.
+- If the user has not decided yet, write `To be decided` in that block. An honest gap is better than an invented answer, because every later decision is checked against this file.
+- Never derive this file from the code. In a project fresh from the template the code describes the boilerplate, not the product.
+- When something the user says conflicts with a block already written, point at the conflict and ask which one holds before changing the file.
+
+The non-negotiables in this file extend the decisions recorded in the rule files (section 5). When a new one is agreed in conversation, add it here in the same session.
 
 ---
 
@@ -93,10 +94,10 @@ ORC delegates rather than replaces. Hand the work over when another skill's doma
 | Page, component or layout with a distinctive visual direction | `/frontend-design` |
 | Dashboard, admin panel, report view, data-dense interface | `/interface-design` |
 | Colour palette, token system, visual theme | `/theme-factory` |
-| DDD layer design, naming, patterns | No skill: read `.agents/rules/architecture.md` and `project-guidelines.md`, which are the source |
+| DDD layer design, naming, patterns | No skill: `architecture.md` and `project-guidelines.md` load on their own when files under `src/` are touched |
 | React / Next.js performance and data-fetching patterns | `/vercel-react-best-practices` |
-| Security review of an endpoint, or a codebase-wide vulnerability scan | `/security-review`, plus `.agents/rules/security-analysis.md` |
-| LLM, agent or tool-calling security (OWASP Agentic Top 10) | `/agentic-owasp-security` |
+| Security review of an endpoint, or a codebase-wide vulnerability scan | `/security-review`; `security-analysis.md` loads with the files it covers |
+| LLM, agent or tool-calling security (OWASP Agentic Top 10) | `/agentic-owasp-security` (runs only when the user invokes it) |
 | Landing page or product copy | `/copywriting` |
 | Persuasion, pricing psychology, behavioural levers | `/marketing-psychology` |
 | Product, brand or feature naming | `/branding-specialist` |
@@ -104,38 +105,31 @@ ORC delegates rather than replaces. Hand the work over when another skill's doma
 | Testing the running UI in a browser | `/webapp-testing` |
 | Structuring or expanding `docs/` | `/documentation-organizer` |
 | Deciding whether a feature is worth building at all | `/idea-validator`, if installed at user level; otherwise stay in ORC and weigh it against the kill criteria in `context.md` |
-| LLM integration, prompts, streaming | Stay in ORC; read `project-guidelines.md` and `src/infrastructure/llm/` |
+| LLM integration, prompts, streaming | Stay in ORC; `llm-guidelines.md` loads with the files under `src/infrastructure/llm/` and `src/core/llm/` |
 
-When delegating, carry the relevant constraints into the other skill's context: the non-negotiables from `context.md`, the current phase, and any design tokens already chosen. Example: "Build the billing settings page. It lives under the `(authenticated)` route group, so the layout already guarantees a user. Use the existing tokens in `src/app/globals.css`; do not introduce new colours. The only billing actions available are the ones exposed by `/api/v1/checkout` and `/api/v1/customer-portal`."
+When delegating, carry the relevant constraints into the other skill's context: the non-negotiables from `context.md`, the current phase, and any design tokens already chosen. Example: "Build the billing settings page. It lives under the `(authenticated)` route group, so the layout redirects visitors with no session, and the page itself calls `getCurrentUserForPage()`. Use the existing tokens in `src/app/globals.css`; do not introduce new colours. The only billing actions available are the ones exposed by `/api/v1/checkout` and `/api/v1/customer-portal`."
 
 ---
 
-## 5. Architectural warnings: advise, do not block
+## 5. Architectural decisions: advise, do not block
 
-These are decisions the template has already made. Warn when a change drifts from one, explain the consequence, and let the user decide. A warning is a flag that requires a conscious override, not a veto.
+The decisions the template has already made are recorded in the rule files, not here, so they apply whether or not ORC was invoked:
 
-**⚠ Warn if you see:**
+| Decision area | Rule file |
+|---|---|
+| Layers, thin route handlers, ports in `core/`, SDKs as adapters | `architecture.md` |
+| API versioning, naming, style | `project-guidelines.md` |
+| Sign-in, onboarding gate, proxy, platform operator axis | `auth-guidelines.md` |
+| Secrets, webhooks, RLS, `SECURITY DEFINER` functions | `security-analysis.md` |
+| Model output, refusals, token budget, effort, prompt caching | `llm-guidelines.md` |
+| Typed errors | `error-handling.md` |
+| Version pins and exact versions | `tech-stack.md` |
 
-- **Business logic in a route handler.** Decision: route handlers are thin composition roots that validate, inject, call one service and respond; `core/` services own the logic. Consequence: logic in a handler cannot be tested without an HTTP request and cannot be reused by another entry point. See `architecture.md`.
-- **A framework import inside `core/`** (`next/*`, `@supabase/*`, `react`, a payment or LLM SDK). Decision: `core/` is framework-free and `infrastructure/` implements its contracts.
-- **An API route outside `/api/v1/`.** Decision: all routes are versioned. See `project-guidelines.md`.
-- **A protected action that does not verify the user first.** Decision: identity is established before any work on the user's behalf. Pages under `(authenticated)` are covered by its layout; API routes must call `getCurrentUser()` themselves, because a layout does not protect a route handler.
-- **An authorisation gate added to `src/proxy.ts`.** Decision: the proxy only refreshes the session; gates live in route-group layouts. A gate in the proxy also runs on `robots.txt`, `sitemap.xml` and other metadata routes and serves them the login page.
-- **A tenant role used to authorise a platform operation.** Decision: platform administration goes through `platform_admins` (`src/core/platform/`, `platform-admin-session.ts`). Every paying customer is an owner of their own tenant, so an owner check leaks platform power to all of them.
-- **Entitlements, credits or access granted anywhere except the verified payment webhook.** Decision: money received is the only trigger. A checkout success page or client redirect is not proof of payment. The webhook verifies its signature over the raw body before trusting the event.
-- **A payment or LLM SDK imported outside `infrastructure/` and route handlers.** Decision: SDKs are adapters; `core/` sees only its own contracts.
-- **A port interface declared in `infrastructure/` next to its implementation** (`ILLMProvider`, `IEmailProvider`, `IBillingProvider` and any new one). Decision: the interface lives in `core/<capability>/contracts/` and the adapter imports it. Consequence: declared the other way round, every consumer imports from `infrastructure/` to name the type it depends on, so the dependency rule is inverted and replacing the vendor touches every call site.
-- **Raw LLM output passed straight to the UI or stored as a domain entity.** Decision: model output crosses an anti-corruption layer (a translator in `core/<domain>/` that parses and validates it into domain types) before any other layer sees it.
-- **An LLM response read as `content[0]`.** Decision: scan the blocks for `type === 'text'`. Current models always reason, so a thinking block comes first and position 0 is not the answer. Consequence: a response that answered correctly is reported as "no text content", which reads as an API failure and sends whoever debugs it to the wrong place.
-- **A model refusal treated as an API error, or not checked at all.** Decision: a policy decline arrives as HTTP 200 with `stop_reason: 'refusal'`, so it is checked before the content is read and raised as `LLMRefusalError` (422), never as `ExternalApiError` (502). Consequence: a 502 says the integration is broken when it is healthy, and a streamed refusal with no check hands the caller an empty string and no reason.
-- **A caller's token budget passed straight to `max_tokens`.** Decision: reasoning draws on the same ceiling as the answer, so the adapter adds its own headroom. Consequence: a budget sized for a pre-thinking model truncates the answer mid-sentence with `stop_reason: 'max_tokens'`.
-- **A model string changed without setting `effort`.** Decision: effort is explicit in the adapter. Consequence: per-model defaults differ (Opus 5.5 defaults to `medium`, Opus 5 to `high`), so swapping the ID silently changes both reasoning depth and cost.
-- **A volatile line (timestamp, counter, "synced N min ago") placed before the stable prompt or the history.** Decision: stable content first, per-turn content after the last cache breakpoint, and every database read that feeds a prompt carries an `ORDER BY`. Consequence: caching is a prefix match, so one byte early in the prompt repays the whole history, and without `ORDER BY` an unrelated `UPDATE` reorders rows and breaks the prefix with nothing in the diff to show it.
-- **A secret logged, returned in an error, or exposed through a `NEXT_PUBLIC_` variable.** Decision: credentials never leave the server and never reach logs. See `error-handling.md` and `security-analysis.md`.
-- **A server-side Supabase client built without `timedFetch`.** Decision: every server-side client has a deadline, because Node's `fetch` has none and a hung request holds the invocation open with no error.
-- **A dependency bumped past a pin recorded in `CLAUDE.md`.** Decision: those pins exist because the next major breaks lint, tests or the runtime; the reason is written next to each one.
+ORC's part is the judgement around them. When a change drifts from a recorded decision or from a non-negotiable in `context.md`:
 
-When you warn, state the consequence in one sentence, as in the first item above.
+- Say which decision it drifts from and state the consequence in one sentence.
+- Let the user decide. A warning is a flag that requires a conscious override, not a veto.
+- If the user overrides, record the new decision where the old one lived (the rule file, or `context.md`), in the same session. A decision that changed only in conversation is lost by the next session.
 
 ---
 
@@ -145,7 +139,7 @@ When you warn, state the consequence in one sentence, as in the first item above
 - Check the current phase before recommending implementation work, and flag a phase-gate violation when it would block a later dependency.
 - Prefer small, testable increments aligned with an existing contract.
 - When the documents are ambiguous on a decision, surface it; do not resolve it silently.
-- Before a commit, the gate in `CLAUDE.md` (typecheck, lint, test) must pass.
+- Before a commit, the gate in `sdlc.md` must pass.
 
 ---
 

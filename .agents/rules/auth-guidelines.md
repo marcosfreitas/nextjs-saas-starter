@@ -17,6 +17,7 @@ Supabase Auth — email code (OTP, 8 digits) by default. No password, no link in
 ## Session Management
 - `src/proxy.ts` — refreshes sessions on every request via cookie exchange (Next.js proxy, formerly middleware)
 - `src/infrastructure/database/server.ts` — SSR client reads/writes cookies
+- Every server-side Supabase client is built with `timedFetch` (`timed-fetch.ts`). Node's `fetch` has no deadline, so without it a hung request holds the invocation open with no error
 - `src/infrastructure/database/auth-session.ts` — `getCurrentUser()` (API routes), `getCurrentUserForPage()` (server pages), `getCurrentUserOrNull()`
 
 ## Usage
@@ -29,7 +30,7 @@ const user = await getCurrentUser(); // UnauthorizedError if not signed in; Onbo
 
 **Own profile read only:** `getSessionUser()` checks the session and nothing else. It is exempt because the user needs their own profile to see where they stand. Use it for nothing else.
 
-**Protected page (group layout):** the layout in `src/app/(authenticated)/layout.tsx` redirects: no session to `/auth/sign-in`, not onboarded to `/onboarding`. It only redirects, never throws. Server pages inside the group call `getCurrentUserForPage()`: the same check, but a refusal redirects instead of throwing, so the dev server does not log an error on every first login. API routes keep `getCurrentUser()` and its 401/403.
+**Protected page (group layout):** the layout in `src/app/(authenticated)/layout.tsx` redirects: no session to `/auth/sign-in`, not onboarded to `/onboarding`. It only redirects, never throws. The layout is navigation, not a security boundary: layout and page render in parallel, and the layout does not run again when the user moves between pages of the group. Server pages inside the group call `getCurrentUserForPage()`: the same check, but a refusal redirects instead of throwing, so the dev server does not log an error on every first login. API routes keep `getCurrentUser()` and its 401/403.
 
 **Sign-in flow (one field, then the code, in the same tab):**
 1. User submits email → `supabase.auth.signInWithOtp({ email })` from the browser (`src/app/auth/sign-in/page.tsx`). It creates the account on first use. No `emailRedirectTo`.
@@ -56,7 +57,7 @@ await supabase.auth.signInWithOAuth({
 ```
 
 ## Row Level Security
-Enable RLS on all tables. Default policy: users can only access their own rows.
+Enable RLS on all tables. Default policy: users can only access their own rows. A policy needs a matching `GRANT` to run at all (see "The database half" below).
 
 ```sql
 alter table your_table enable row level security;
