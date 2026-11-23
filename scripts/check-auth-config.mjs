@@ -23,6 +23,7 @@ const API_BASE = process.env.SUPABASE_API_BASE ?? 'https://api.supabase.com';
 const CALLBACK_PATH = '/auth/callback';
 const OTP_LENGTH = 8;
 const OTP_EXP_SECONDS = 900;
+const MIN_EMAIL_GAP_SECONDS = 60;
 const CODE_TOKEN = /\{\{\s*\.Token\s*\}\}/;
 const LINK_VARIABLE = /\{\{\s*\.(ConfirmationURL|SiteURL|RedirectTo)\s*\}\}/;
 
@@ -62,6 +63,14 @@ export function checkAuthConfig(config) {
   if (config.mailer_otp_exp !== OTP_EXP_SECONDS) {
     problems.push(
       `mailer_otp_exp is ${config.mailer_otp_exp}, expected ${OTP_EXP_SECONDS}: the templates promise 15 minutes.`
+    );
+  }
+
+  // Minimum gap between two auth emails to the same address. Below a minute, one
+  // address can be flooded with codes by anyone who knows it.
+  if (!(Number(config.smtp_max_frequency) >= MIN_EMAIL_GAP_SECONDS)) {
+    problems.push(
+      `smtp_max_frequency is ${config.smtp_max_frequency}, expected at least ${MIN_EMAIL_GAP_SECONDS}: the same address could be sent codes back to back.`
     );
   }
 

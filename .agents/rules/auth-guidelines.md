@@ -36,8 +36,9 @@ const user = await getCurrentUser(); // UnauthorizedError if not signed in; Onbo
 1. User submits email → `supabase.auth.signInWithOtp({ email })` from the browser (`src/app/auth/sign-in/page.tsx`). It creates the account on first use. No `emailRedirectTo`.
 2. The email carries `{{ .Token }}` (8 digits) and no link (`supabase/templates/code.html`, wired in `supabase/config.toml`).
 3. User types the code → `supabase.auth.verifyOtp({ email, token, type: 'email' })`, also from the browser. Verifying on the server would share GoTrue's per-IP attempt limit across every user.
-4. The session cookie is set; the page goes to `/dashboard`. The authenticated layout sends a profile that is not onboarded to `/onboarding`.
-5. `/onboarding` records the terms acceptance in `public.consents` and sets `profiles.onboarded_at`
+4. Asking for another code waits 60 s **per address**, in two places. The auth server enforces it (`max_frequency = "60s"` under `[auth.email]` in `supabase/config.toml`; `smtp_max_frequency` on a hosted project, checked by `pnpm check:auth`). The form mirrors it in the browser with `src/shared/utils/otp-cooldown.ts`, keyed by address in `localStorage`, and every path that asks for a code goes through one function (`requestCode`). A counter kept only in the form's state is reset by "change email", and the same address typed again gets a second code at once.
+5. The session cookie is set; the page goes to `/dashboard`. The authenticated layout sends a profile that is not onboarded to `/onboarding`.
+6. `/onboarding` records the terms acceptance in `public.consents` and sets `profiles.onboarded_at`
 
 **The gate is the authenticated layout, not the proxy.** `src/proxy.ts` only refreshes the session cookie, with `getClaims()`, and makes no table read per navigation. Outside the `(authenticated)` group are `/onboarding`, terms, privacy, `/auth/*` (token routes), and metadata routes, so none of them can be swallowed by a gate. A profile that cannot be read counts as not onboarded.
 

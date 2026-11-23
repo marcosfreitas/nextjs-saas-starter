@@ -10,6 +10,7 @@ const GOOD = {
   site_url: 'https://app.example.com',
   mailer_otp_length: 8,
   mailer_otp_exp: 900,
+  smtp_max_frequency: 60,
   mailer_templates_confirmation_content: GOOD_TEMPLATE,
   mailer_templates_magic_link_content: GOOD_TEMPLATE,
 };
@@ -60,4 +61,15 @@ test('a missing template counts as a failure, not a pass', () => {
 test('flags the removed callback still in the redirect allowlist', () => {
   const problems = checkAuthConfig({ ...GOOD, uri_allow_list: 'https://x.dev/auth/callback,https://x.dev/auth/confirm' });
   assert.match(problems.join('\n'), /uri_allow_list still includes/);
+});
+
+test('flags a gap between emails to one address shorter than a minute', () => {
+  const problems = checkAuthConfig({ ...GOOD, smtp_max_frequency: 1 });
+  assert.match(problems.join('\n'), /smtp_max_frequency is 1, expected at least 60/);
+});
+
+test('a missing email gap counts as a failure', () => {
+  const rest = { ...GOOD };
+  delete rest.smtp_max_frequency;
+  assert.match(checkAuthConfig(rest).join('\n'), /smtp_max_frequency/);
 });

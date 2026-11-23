@@ -4,8 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/infrastructure/database/client';
 import { isValidOtpCode, normalizeOtpCode, OTP_LENGTH } from '@/shared/utils/otp';
-
-const RESEND_SECONDS = 60;
+import { markCodeSent, secondsUntilResend } from '@/shared/utils/otp-cooldown';
 
 /**
  * One gesture for signup and login: type the email, type the code it receives.
@@ -34,6 +33,7 @@ function SignInForm() {
   const [errorMessage, setError] = useState<string | null>(null);
   const error = errorMessage ?? (linkFailed ? 'That link is no longer valid. Enter your email to get a new code.' : null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -42,8 +42,23 @@ function SignInForm() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  async function sendCode(address: string) {
+  /**
+   * The only path that asks the auth server for a code. Every caller goes through
+   * the per-address wait first, so "change email" followed by the same address
+   * cannot send a second code early.
+   *
+   * Returns 'sent', 'waiting' (a code went out to this address less than a minute
+   * ago: show the code step, send nothing) or 'failed'.
+   */
+  async function requestCode(address: string): Promise<'sent' | 'waiting' | 'failed'> {
     setError(null);
+    setNotice(null);
+    const wait = secondsUntilResend(address);
+    if (wait > 0) {
+      setCooldown(wait);
+      setNotice('A code was sent to this address a moment ago. Use that one, or wait to ask for another.');
+      return 'waiting';
+    }
     const { error } = await supabase.auth.signInWithOtp({ email: address });
     if (error) {
       setError(
@@ -51,19 +66,20 @@ function SignInForm() {
           ? 'Too many codes requested. Wait a few minutes before trying again.'
           : 'We could not send the code. Wait a minute and try again.'
       );
-      return false;
+      return 'failed';
     }
-    setCooldown(RESEND_SECONDS);
-    return true;
+    markCodeSent(address);
+    setCooldown(secondsUntilResend(address));
+    return 'sent';
   }
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     const address = email.trim();
     setBusy(true);
-    const sent = await sendCode(address);
+    const result = await requestCode(address);
     setBusy(false);
-    if (sent) {
+    if (result !== 'failed') {
       setSentTo(address);
       setCode('');
     }
@@ -96,6 +112,7 @@ function SignInForm() {
     setSentTo(null);
     setCode('');
     setError(null);
+    setNotice(null);
   }
 
   if (sentTo) {
@@ -112,6 +129,7 @@ function SignInForm() {
           <p className="text-sm text-muted-foreground">
             Each new code replaces the previous one. Use the most recent code from the email.
           </p>
+          {notice && <p className="text-sm">{notice}</p>}
           <input
             type="text"
             inputMode="numeric"
@@ -136,7 +154,7 @@ function SignInForm() {
           </button>
           <button
             type="button"
-            onClick={() => sendCode(sentTo)}
+            onClick={() => requestCode(sentTo)}
             disabled={busy || cooldown > 0}
             className="text-sm underline disabled:no-underline disabled:opacity-50"
           >
