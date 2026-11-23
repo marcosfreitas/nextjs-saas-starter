@@ -3,6 +3,7 @@ paths:
   - "src/app/api/**"
   - "src/infrastructure/**"
   - "src/proxy.ts"
+  - "src/shared/http/**"
   - "supabase/**"
 ---
 
@@ -33,6 +34,13 @@ paths:
 - Use `POLAR_WEBHOOK_SECRET` to authenticate Polar events
 - Process webhooks idempotently — events may arrive multiple times
 - Grant entitlements, credits or access only from the verified webhook. A checkout success page or a client redirect is not proof of payment
+
+## Brotli (CVE-2026-111497)
+
+Node 22.23.4, 24.22.1 and 26.12.1 fix the Brotli decoder. Until the platform is on those versions, two code rules apply:
+
+- **Response from a URL the user or a third party can influence:** use `safeGet`, never `fetch`. The built-in `fetch` decodes `br` on its own, before your code sees the response. `safeGet` refuses any `Content-Encoding` other than identity, gzip and deflate before reading the body, and does not follow redirects. Removing `br` from `Accept-Encoding` is not enough: the server may answer `br` anyway.
+- **Request body:** Next 16.4.3 (route handlers) and Fastify do not decode `br` by default; Express 5 and body-parser 2 do. If Express ever enters this repo, refuse `br` in the middleware (`inflate: false` gives 415 for `br` and `gzip`) before any parser.
 
 ## Environment Variables
 - All secrets via `assertEnv()` — crashes loudly on missing config rather than silently failing

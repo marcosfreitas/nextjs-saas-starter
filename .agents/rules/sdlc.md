@@ -38,11 +38,11 @@ On every dependency or security pass: `pnpm audit`, then `pnpm update` (stays in
 
 ## Adding a new domain
 1. Create `src/core/{domain}/{contracts,entities,services}/`
-2. Add contract interfaces
+2. Add contract interfaces first; entities next, services last
 3. Create entity types
 4. Implement services (one class per use case)
-5. Create `src/infrastructure/repositories/{domain}.repository.ts`
-6. Wire in `src/app/api/v1/{domain}/route.ts`
+5. Create `src/infrastructure/repositories/{domain}.repository.ts`, extending `BaseRepository` (it injects the `SupabaseClient` and converts a Postgres error into `DatabaseError`)
+6. Wire in `src/app/api/v1/{domain}/route.ts`: thin. Validate with Zod, inject, call, respond
 7. Add `src/features/{domain}/` for UI
 
 ## Adding a new integration

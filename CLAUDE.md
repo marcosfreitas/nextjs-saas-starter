@@ -20,21 +20,7 @@ shared/ is used by every layer except core/
 
 `core/` does not import Next.js, Supabase, HTTP or React. If an import breaks that, the logic is in the wrong layer.
 
-A route handler is the composition root, the only place that instantiates a repository and a service:
-
-```typescript
-export async function GET() {
-  try {
-    const authUser = await getCurrentUser();          // throws UnauthorizedError
-    await checkRateLimit(`users-get:${authUser.id}`);
-    const supabase = await createClient();
-    const service = new GetUserService(new UserRepository(supabase));
-    return ok(await service.execute(authUser.id));
-  } catch (err) {
-    return handleError(err);                          // maps every error to HTTP
-  }
-}
-```
+A route handler is the composition root, the only place that instantiates a repository and a service. The worked example is in `architecture.md`.
 
 ## Actual state of the code
 
@@ -71,44 +57,25 @@ Directories that **exist but are empty**. The rules describe the pattern, not th
 1. **Few tests.** `jest.config.js` exists and works (ts-jest, jsdom by default, `@/` alias). Suites today: the platform gate, the auth session helpers and the onboarding check (`src/infrastructure/database/__tests__/`), `safeGet`, and the `html`, `otp` and `safe-next` utils. `scripts/check-auth-config.test.mjs` runs outside jest, with `pnpm test:auth-config`. The `users` domain, the providers and the route handlers have none. A pure node test opts out of jsdom with `@jest-environment node` at the top of the file.
 2. **The Supabase types are a placeholder.** `src/infrastructure/database/types.ts` declares `Tables: { [name: string]: GenericTable }` with `Record<string, unknown>`, so the typed client validates nothing. Generate the real types (`supabase gen types typescript --project-id <id>`) as soon as there is a schema. The Supabase CLI is not a project dependency; use `pnpm dlx supabase`.
 3. **The Anthropic SDK is behind the models.** The IDs in `anthropic.provider.ts` are current (`claude-opus-5-5` by default), but the `Model` union of `@anthropic-ai/sdk@0.121.0` does not list the 5.5 family: they pass through the type's `(string & {})` fallback, not because they are declared. It works, and you lose autocomplete and the wrong-ID check. Upgrade the SDK before using the provider in earnest.
-4. **`.nvmrc` says 22, the machine runs 24.** Node 24 is Vercel's current default; the `.nvmrc` is the one that is behind.
+4. **`.nvmrc` says 22.** Node 24 is Vercel's current default; the `.nvmrc` is the one that is behind.
 5. **`public.users` has no migration.** The versioned migrations create `platform_admins`, `profiles` and `consents`, but the `public.users` table that `UserRepository` queries is not created by any of them. The template has no hosted project, so nothing else creates it either: a project built from the template adds that migration with its first real schema.
 6. **Three dependencies hold their version on purpose**, all pinned by the same lint ecosystem:
    - `eslint` stays on 9. Version 10 removes `context.getFilename()`, and `eslint-plugin-react@7.37.5` (a transitive dependency of `eslint-config-next`) still calls it: `pnpm lint` dies with `contextOrFilename.getFilename is not a function`. npm already marks 9.39.5 as unsupported, so this is debt with a deadline.
    - `typescript` stays on 6. `typescript-eslint@8.68` refuses TS 7.0 explicitly ("does not support TS 7.0"), and ts-jest breaks too. Only `tsc` and `next build` pass. Tracking: typescript-eslint#10940, which talks about supporting TS >= 7.1.
-   - `@types/node` stays on 25. Going to 26 widens the mismatch with the runtime: the machine runs Node 24 and so does Vercel. The right move is to go to `^24` and fix the `.nvmrc` with it, not to go up.
-
-### Brotli (CVE-2026-111497)
-
-Node 22.23.4, 24.22.1 and 26.12.1 fix the Brotli decoder. Until the platform is on those versions, two code rules apply:
-
-- **Response from a URL the user or a third party can influence:** use `safeGet`, never `fetch`. The built-in `fetch` decodes `br` on its own, before your code sees the response. `safeGet` refuses any `Content-Encoding` other than identity, gzip and deflate before reading the body, and does not follow redirects. Removing `br` from `Accept-Encoding` is not enough: the server may answer `br` anyway.
-- **Request body:** Next 16.4.3 (route handlers) and Fastify do not decode `br` by default; Express 5 and body-parser 2 do. If Express ever enters this repo, refuse `br` in the middleware (`inflate: false` gives 415 for `br` and `gzip`) before any parser.
+   - `@types/node` stays on 25. Going to 26 widens the mismatch with the runtime, which is Node 24 on Vercel. The right move is to go to `^24` and fix the `.nvmrc` with it, not to go up.
 
 ## Commands
 
-This machine freezes when Node tooling grows too large. Always with a heap cap and a timeout:
+Always with a heap cap and a timeout, so a runaway build or test cannot take the machine down:
 
 ```bash
-pnpm dev --port 3100                                              # see the note on ports
+pnpm dev --port 3100
 NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm build
 NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm typecheck
 NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm lint
 NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm test --runInBand
 ```
 
-**Ports:** 3000 and 3001 belong to other projects on this machine. Use a dedicated port (3100+) and never `pkill next`, which kills another session's dev server.
-
-**ESLint stays on v9.** The Next 16 lint stack (`eslint-config-next`) only supports v9; if `ncu` proposes v10, refuse.
-
-## Adding a new domain
-
-1. `src/core/{domain}/{contracts,entities,services}/`: contract first, entity next, service last
-2. One service = one use case = one public `execute()` method
-3. `src/infrastructure/repositories/{domain}.repository.ts`, extending `BaseRepository` (it injects the `SupabaseClient` and converts a Postgres error into `DatabaseError`)
-4. `src/app/api/v1/{domain}/route.ts`: thin. Validates with Zod, injects, calls, responds
-5. `src/features/{domain}/` for the UI
-
 ## Before committing
 
-`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` must pass, always with the heap cap and timeout from "Commands". If the change touches `supabase/`, also run the migrations from scratch on a disposable local stack (`supabase db reset`, then `supabase stop --no-backup`). The step by step is in `.agents/rules/sdlc.md`. Commits follow Conventional Commits, one logical unit per commit.
+The gate (typecheck, lint, test, build, and the from-scratch migration run when `supabase/` changes) and the steps for adding a domain are in `.agents/rules/sdlc.md`, which loads in every session. Commits follow Conventional Commits, one logical unit per commit.
