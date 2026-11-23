@@ -83,6 +83,34 @@ done
 
 copied=0; customised=0; same=0; skipped=0
 
+# A rule's paths block is also a list of what the rule assumes exists. When most of
+# its globs match nothing in the target, the rule probably describes code this
+# project does not have: say so, so someone reads it before trusting it.
+fit_note() {
+  local rel="$1"
+  case "$rel" in .agents/rules/*) ;; *) return 0 ;; esac
+  python3 - "$TEMPLATE/$rel" "$TARGET" "$rel" <<'PY'
+import glob, itertools, os, re, sys
+rule, target, rel = sys.argv[1:4]
+paths, block = [], 0
+for line in open(rule):
+    if line.strip() == '---':
+        block += 1
+        if block == 2: break
+        continue
+    m = re.match(r'\s+-\s+"?(.*?)"?\s*$', line)
+    if block == 1 and m: paths.append(m.group(1))
+def braces(pattern):                      # expand {a,b}; glob itself does not
+    parts = re.split(r'\{([^}]*)\}', pattern)
+    options = [p.split(',') if i % 2 else [p] for i, p in enumerate(parts)]
+    return [''.join(c) for c in itertools.product(*options)]
+missing = sum(1 for p in paths
+              if not any(glob.glob(os.path.join(glob.escape(target), g), recursive=True) for g in braces(p)))
+if paths and missing * 2 > len(paths):
+    print(f"  REVIEW    {rel}: {missing} of {len(paths)} paths match nothing here. It may describe code this project lacks.")
+PY
+}
+
 for rel in "${FILES[@]}"; do
   src="$TEMPLATE/$rel"; dst="$TARGET/$rel"
 
@@ -97,6 +125,7 @@ for rel in "${FILES[@]}"; do
     created="$(git -C "$TEMPLATE" log --diff-filter=A --format=%ct -- "$rel" | tail -1)"
     if [ $FORCE = 1 ] || { [ "$baseline" -gt 0 ] && [ "${created:-0}" -gt "$baseline" ]; }; then
       echo "NEW         $rel"
+      fit_note "$rel"
       [ $APPLY = 1 ] && cp "$src" "$dst"
       copied=$((copied+1))
     else
@@ -107,6 +136,7 @@ for rel in "${FILES[@]}"; do
     same=$((same+1))
   elif [ -n "${MATCH[$rel]:-}" ]; then
     echo "UPDATE      $rel"
+    fit_note "$rel"
     [ $APPLY = 1 ] && cp "$src" "$dst"
     copied=$((copied+1))
   elif [ $FORCE = 1 ]; then
@@ -115,6 +145,7 @@ for rel in "${FILES[@]}"; do
       customised=$((customised+1))
     else
       echo "OVERWRITE   $rel (customised here; the local version stays in git history)"
+      fit_note "$rel"
       [ $APPLY = 1 ] && cp "$src" "$dst"
       copied=$((copied+1))
     fi
