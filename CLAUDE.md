@@ -32,7 +32,7 @@ What is implemented and working:
 | Typed error hierarchy | `src/shared/errors/index.ts` |
 | Rate limit (Upstash, no-op without env) | `src/shared/utils/rate-limit.ts` |
 | HTML escaping and email template | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
-| GET for a URL third parties can influence (does not decode Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
+| GET for a URL third parties can influence (no redirects, restricted encodings) | `src/shared/http/safe-get.ts` (`safeGet`) |
 | Sign-up and sign-in by an 8-digit email code, no password, no link, onboarding and consent | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser` for API routes, `getCurrentUserForPage` for server pages, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` (no passwords, profiles and consents), `supabase/migrations/20261111{000000,000100,000200}_*.sql` (end password sessions, `complete_onboarding()`, acceptance per terms version) |
 | Supabase session by cookie | `src/proxy.ts` (only refreshes the cookie), `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
 | Example domain (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
