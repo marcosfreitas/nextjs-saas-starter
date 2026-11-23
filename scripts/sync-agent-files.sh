@@ -38,17 +38,33 @@ FILES=()
 while IFS= read -r f; do FILES+=("$f"); done < <(cd "$TEMPLATE" && ls .agents/rules/*.md)
 FILES+=(".claude/skills/orc/SKILL.md" ".claude/skills/agentic-owasp-security/SKILL.md")
 
-# True when the target file equals any version of this path in the template's history.
-matches_template_history() {
-  local rel="$1" hash
+# Prints the template commit whose version of this path equals the target file, if any.
+matching_template_commit() {
+  local rel="$1" hash commit
   hash="$(git hash-object "$TARGET/$rel")"
-  git -C "$TEMPLATE" log --format=%H -- "$rel" | while read -r commit; do
+  while read -r commit; do
     if [ "$(git -C "$TEMPLATE" rev-parse "$commit:$rel" 2>/dev/null)" = "$hash" ]; then
-      echo yes
-      break
+      echo "$commit"
+      return 0
     fi
-  done | grep -q yes
+  done < <(git -C "$TEMPLATE" log --format=%H -- "$rel")
+  return 1
 }
+
+# Baseline: the newest template commit that any of the project's files still matches.
+# It dates the template snapshot the project was built from. A rule the project lacks
+# is added only if the template created it AFTER that date. A rule that already
+# existed back then and is missing here was left out by the project on purpose.
+baseline=0
+declare -A MATCH
+for rel in "${FILES[@]}"; do
+  [ -f "$TARGET/$rel" ] || continue
+  if commit="$(matching_template_commit "$rel")"; then
+    MATCH["$rel"]="$commit"
+    ts="$(git -C "$TEMPLATE" show -s --format=%ct "$commit")"
+    [ "$ts" -gt "$baseline" ] && baseline="$ts"
+  fi
+done
 
 copied=0; customised=0; same=0; skipped=0
 
@@ -63,12 +79,18 @@ for rel in "${FILES[@]}"; do
   esac
 
   if [ ! -e "$dst" ]; then
-    echo "NEW         $rel"
-    [ $APPLY = 1 ] && cp "$src" "$dst"
-    copied=$((copied+1))
+    created="$(git -C "$TEMPLATE" log --diff-filter=A --format=%ct -- "$rel" | tail -1)"
+    if [ "$baseline" -gt 0 ] && [ "${created:-0}" -gt "$baseline" ]; then
+      echo "NEW         $rel"
+      [ $APPLY = 1 ] && cp "$src" "$dst"
+      copied=$((copied+1))
+    else
+      echo "ABSENT      $rel (the project does not carry this rule: not added)"
+      skipped=$((skipped+1))
+    fi
   elif cmp -s "$src" "$dst"; then
     same=$((same+1))
-  elif matches_template_history "$rel"; then
+  elif [ -n "${MATCH[$rel]:-}" ]; then
     echo "UPDATE      $rel"
     [ $APPLY = 1 ] && cp "$src" "$dst"
     copied=$((copied+1))
