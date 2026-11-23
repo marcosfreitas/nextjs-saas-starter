@@ -4,6 +4,7 @@
 # Run it from the root of the TARGET project:
 #   bash ~/Projects/Web/nextjs-saas-starter/scripts/sync-agent-files.sh           # shows the plan, writes nothing
 #   bash ~/Projects/Web/nextjs-saas-starter/scripts/sync-agent-files.sh --apply   # copies
+#   ... --apply --force   # also overwrites files the project customised (see below)
 #
 # What it never does:
 # - It never overwrites a file the project has customised. A target file is replaced
@@ -14,6 +15,13 @@
 #   and notes stay as they are.
 # - It never edits CLAUDE.md.
 #
+# --force lifts the first guard: a customised file with the template's name is
+# overwritten too, and a rule the project lacks is added. The local version is lost
+# from the working tree, so --force refuses a file with uncommitted changes (git could
+# not give it back). Use it only where the template's text is right for the project:
+# a rule or skill that carries project state, or that describes another stack, is
+# wrong to overwrite.
+#
 # Copies are plain `cp`, so the result is the template's file, not a rewrite of it.
 
 set -euo pipefail
@@ -21,7 +29,14 @@ set -euo pipefail
 TEMPLATE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET="$(pwd)"
 APPLY=0
-[ "${1:-}" = "--apply" ] && APPLY=1
+FORCE=0
+for arg in "$@"; do
+  case "$arg" in
+    --apply) APPLY=1 ;;
+    --force) FORCE=1 ;;
+    *) echo "unknown option: $arg (use --apply and, optionally, --force)" >&2; exit 2 ;;
+  esac
+done
 
 if [ "$TARGET" = "$TEMPLATE" ]; then
   echo "Run this from the target project, not from the template." >&2
@@ -80,7 +95,7 @@ for rel in "${FILES[@]}"; do
 
   if [ ! -e "$dst" ]; then
     created="$(git -C "$TEMPLATE" log --diff-filter=A --format=%ct -- "$rel" | tail -1)"
-    if [ "$baseline" -gt 0 ] && [ "${created:-0}" -gt "$baseline" ]; then
+    if [ $FORCE = 1 ] || { [ "$baseline" -gt 0 ] && [ "${created:-0}" -gt "$baseline" ]; }; then
       echo "NEW         $rel"
       [ $APPLY = 1 ] && cp "$src" "$dst"
       copied=$((copied+1))
@@ -94,8 +109,17 @@ for rel in "${FILES[@]}"; do
     echo "UPDATE      $rel"
     [ $APPLY = 1 ] && cp "$src" "$dst"
     copied=$((copied+1))
+  elif [ $FORCE = 1 ]; then
+    if [ -n "$(git -C "$TARGET" status --porcelain -- "$rel")" ]; then
+      echo "DIRTY       $rel (customised AND uncommitted: commit or stash it first, not overwritten)"
+      customised=$((customised+1))
+    else
+      echo "OVERWRITE   $rel (customised here; the local version stays in git history)"
+      [ $APPLY = 1 ] && cp "$src" "$dst"
+      copied=$((copied+1))
+    fi
   else
-    echo "CUSTOMISED  $rel (differs from every template version: left alone, merge by hand)"
+    echo "CUSTOMISED  $rel (differs from every template version: left alone; --force overwrites)"
     customised=$((customised+1))
   fi
 done
