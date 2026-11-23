@@ -1,114 +1,114 @@
 # CLAUDE.md — nextjs-saas-starter
 
-Boilerplate SaaS em Next.js 16 / React 19, organizado em DDD + Clean Architecture. **É um template**: a maior parte do valor está na estrutura e nos contratos, não em features prontas. Leia a seção "Estado real do código" antes de assumir que algo existe.
+SaaS boilerplate on Next.js 16 / React 19, organised as DDD + Clean Architecture. **It is a template**: most of the value is in the structure and the contracts, not in finished features. Read "Actual state of the code" before assuming something exists.
 
-## Regras detalhadas
+## Detailed rules
 
-As regras ficam em `.agents/rules/` e chegam ao Claude por `.claude/rules/`, que é um symlink para essa pasta. Cada arquivo tem um bloco `paths` no topo, e a regra só entra no contexto quando o Claude mexe em arquivo que casa com o padrão. Não é preciso abrir o arquivo manualmente. Ao criar regra nova, dê o `paths` dela no frontmatter. Regra sem `paths` carrega em toda sessão, então use só para o que vale em todo lugar (hoje: `sdlc.md` e `tech-stack.md`, e o `context.md` do produto quando existir).
+The rules live in `.agents/rules/` and reach Claude through `.claude/rules/`, which is a symlink to that folder. Each file has a `paths` block at the top, and the rule enters the context only when Claude touches a file that matches the pattern. There is no need to open the file by hand. When you create a rule, give it its `paths` in the frontmatter. A rule with no `paths` loads in every session, so use that only for what applies everywhere (today: `sdlc.md` and `tech-stack.md`, plus the product's `context.md` once it exists).
 
-O `orc` (`/orc`) cuida de fases, roadmap e contexto do produto. As decisões de arquitetura não moram nele: ficam nas regras, que carregam sozinhas.
+`orc` (`/orc`) looks after phases, the roadmap and the product context. The architectural decisions do not live in it: they are in the rules, which load on their own.
 
-Skills ficam em dois lugares. Cinco têm a fonte em `.agents/skills/` (frontend-design, security-review, copywriting, marketing-psychology, vercel-react-best-practices), e `.claude/skills/` só tem um symlink para cada uma: edite a fonte, nunca pelo symlink. As outras oito (orc, interface-design, theme-factory, documentation-organizer, webapp-testing, agentic-owasp-security, branding-specialist, marketing-specialist) existem apenas em `.claude/skills/`, que é a fonte delas. Todas são cópias vendorizadas: nada as atualiza sozinho.
+Skills live in two places. Five have their source in `.agents/skills/` (frontend-design, security-review, copywriting, marketing-psychology, vercel-react-best-practices), and `.claude/skills/` holds only a symlink to each: edit the source, never through the symlink. The other eight (orc, interface-design, theme-factory, documentation-organizer, webapp-testing, agentic-owasp-security, branding-specialist, marketing-specialist) exist only in `.claude/skills/`, which is their source. All are vendored copies: nothing updates them automatically.
 
-## Regra de dependência
+## Dependency rule
 
 ```
 app/ → features/ → core/
-infrastructure/ implementa contratos de core/
-shared/ é usado por todas as camadas, exceto core/
+infrastructure/ implements the contracts of core/
+shared/ is used by every layer except core/
 ```
 
-`core/` não importa Next.js, Supabase, HTTP ou React. Se um import quebra isso, a lógica está na camada errada.
+`core/` does not import Next.js, Supabase, HTTP or React. If an import breaks that, the logic is in the wrong layer.
 
-Route handler é composition root, o único lugar que instancia repositório e serviço:
+A route handler is the composition root, the only place that instantiates a repository and a service:
 
 ```typescript
 export async function GET() {
   try {
-    const authUser = await getCurrentUser();          // lança UnauthorizedError
+    const authUser = await getCurrentUser();          // throws UnauthorizedError
     await checkRateLimit(`users-get:${authUser.id}`);
     const supabase = await createClient();
     const service = new GetUserService(new UserRepository(supabase));
     return ok(await service.execute(authUser.id));
   } catch (err) {
-    return handleError(err);                          // mapeia todo erro para HTTP
+    return handleError(err);                          // maps every error to HTTP
   }
 }
 ```
 
-## Estado real do código
+## Actual state of the code
 
-O que está implementado e funcionando:
+What is implemented and working:
 
-| Peça | Caminho |
+| Piece | Path |
 |------|---------|
-| Envelope de API (`ok` / `created` / `handleError`) | `src/shared/utils/api-handler.ts` |
-| Hierarquia de erros tipados | `src/shared/errors/index.ts` |
-| Rate limit (Upstash, no-op sem env) | `src/shared/utils/rate-limit.ts` |
-| Escape de HTML e template de e-mail | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
-| GET para URL que terceiros influenciam (sem decodificar Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
-| Cadastro e login por código de 8 dígitos no e-mail, sem senha, sem link, onboarding e consentimento | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser` para API, `getCurrentUserForPage` para páginas do servidor, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` |
-| Sessão Supabase por cookie | `src/proxy.ts` (só renova o cookie), `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
-| Domínio de exemplo (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
-| Providers (adaptadores) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
-| Portas que eles implementam | `src/core/{llm,email,billing}/contracts/index.ts` |
-| Erro de recusa do modelo (HTTP 200, `stop_reason: refusal`) | `LLMRefusalError` em `src/shared/errors/index.ts` |
-| Webhook Polar com verificação de assinatura | `src/app/api/v1/webhooks/polar/route.ts` |
-| Gate de super-admin de plataforma | `supabase/migrations/20260827000000_platform_admin.sql`, `src/core/platform/`, `src/infrastructure/database/platform-admin-session.ts` |
-| i18n cookie-based (pt-BR/pt/en, sem prefixo de URL) | `src/shared/i18n/` |
+| API envelope (`ok` / `created` / `handleError`) | `src/shared/utils/api-handler.ts` |
+| Typed error hierarchy | `src/shared/errors/index.ts` |
+| Rate limit (Upstash, no-op without env) | `src/shared/utils/rate-limit.ts` |
+| HTML escaping and email template | `src/shared/utils/html.ts` (`escapeHtml`, `renderTemplate`) |
+| GET for a URL third parties can influence (does not decode Brotli) | `src/shared/http/safe-get.ts` (`safeGet`) |
+| Sign-up and sign-in by an 8-digit email code, no password, no link, onboarding and consent | `src/app/auth/sign-in/`, `src/app/onboarding/`, `src/app/(authenticated)/layout.tsx` (gate), `src/infrastructure/database/auth-session.ts` (`getCurrentUser` for API routes, `getCurrentUserForPage` for server pages, base check), `src/shared/utils/otp.ts`, `src/infrastructure/database/profile.ts`, `supabase/config.toml`, `supabase/templates/code.html`, `supabase/migrations/20261025{170000,180000}_*.sql` |
+| Supabase session by cookie | `src/proxy.ts` (only refreshes the cookie), `src/infrastructure/database/{server,client,admin,auth-session}.ts` |
+| Example domain (users) | `src/core/users/`, `src/infrastructure/repositories/user.repository.ts`, `src/app/api/v1/users/route.ts` |
+| Providers (adapters) | `llm/anthropic.provider.ts`, `email/resend.provider.ts`, `billing/polar.provider.ts` |
+| Ports they implement | `src/core/{llm,email,billing}/contracts/index.ts` |
+| Model refusal error (HTTP 200, `stop_reason: refusal`) | `LLMRefusalError` in `src/shared/errors/index.ts` |
+| Polar webhook with signature verification | `src/app/api/v1/webhooks/polar/route.ts` |
+| Platform super-admin gate | `supabase/migrations/20260827000000_platform_admin.sql`, `src/core/platform/`, `src/infrastructure/database/platform-admin-session.ts` |
+| Cookie-based i18n (pt-BR/pt/en, no URL prefix) | `src/shared/i18n/` |
 | TanStack Query provider | `src/shared/providers/query-provider.tsx` |
-| Zustand (estado de UI, não de servidor) | `src/shared/stores/` |
+| Zustand (UI state, not server state) | `src/shared/stores/` |
 
-Diretórios que **existem mas estão vazios**. Os rules descrevem o padrão, não o conteúdo:
+Directories that **exist but are empty**. The rules describe the pattern, not the content:
 
-- `src/features/`: ainda sem features. A primeira define o padrão `{feature}/{components,hooks}/`
-- `src/shared/components/ui/`: `components.json` aponta shadcn para cá, mas nenhum componente foi instalado. Rode `pnpm dlx shadcn@latest add <componente>` antes de importar.
+- `src/features/`: no features yet. The first one sets the `{feature}/{components,hooks}/` pattern
+- `src/shared/components/ui/`: `components.json` points shadcn here, but no component has been installed. Run `pnpm dlx shadcn@latest add <component>` before importing.
 - `src/config/prompts/`, `docs/architecture/`
-- `src/core/users/services/__tests__/` (o domínio `platform` já tem teste; `users` ainda não)
+- `src/core/users/services/__tests__/` (the `platform` domain already has a test; `users` does not yet)
 
-## Lacunas conhecidas (não são bugs, são pendências do template)
+## Known gaps (not bugs, pending work in the template)
 
-1. **Poucos testes.** `jest.config.js` existe e funciona (ts-jest, jsdom por omissão, alias `@/`), mas só o gate de plataforma e o `html.ts` têm suíte. Um teste node puro opta por sair do jsdom com `@jest-environment node` no topo do arquivo.
-2. **Tipos do Supabase são placeholder.** `src/infrastructure/database/types.ts` declara `Tables: { [name: string]: GenericTable }` com `Record<string, unknown>`, ou seja, o cliente tipado não valida nada. Gere os tipos reais (`supabase gen types typescript --project-id <id>`) assim que houver schema. A CLI do Supabase não é dependência do projeto; use `pnpm dlx supabase`.
-3. **O SDK da Anthropic está atrás dos modelos.** Os IDs no `anthropic.provider.ts` são os atuais (`claude-opus-5-5` por omissão), mas a união `Model` do `@anthropic-ai/sdk@0.121.0` não lista a família 5.5: eles passam pelo fallback `(string & {})` do tipo, não por estarem declarados. Funciona, e você perde o autocomplete e a checagem de ID errado. Suba o SDK antes de usar o provider para valer.
-4. **`.nvmrc` diz 22, a máquina roda 24.** Node 24 é o padrão atual da Vercel; o `.nvmrc` é que está atrasado.
-5. **A migration de `platform_admins` é a única versionada.** A tabela `public.users` que `UserRepository` consulta não é criada por migration nenhuma: o schema base do Supabase só existe no projeto remoto. A cadeia de migrations começa no meio.
-6. **Três dependências seguram versão de propósito**, todas travadas pelo mesmo ecossistema de lint:
-   - `eslint` fica no 9. O 10 remove `context.getFilename()`, e o `eslint-plugin-react@7.37.5` (dep transitiva do `eslint-config-next`) ainda chama esse método: `pnpm lint` morre com `contextOrFilename.getFilename is not a function`. O npm já marca o 9.39.5 como sem suporte, então isto é dívida com prazo.
-   - `typescript` fica no 6. O `typescript-eslint@8.68` recusa TS 7.0 explicitamente ("does not support TS 7.0"), e o ts-jest também quebra. Só `tsc` e `next build` passam. Rastreamento: typescript-eslint#10940, que fala em suportar TS >= 7.1.
-   - `@types/node` fica no 25. Subir pro 26 aumenta o descasamento com o runtime: a máquina roda Node 24 e a Vercel também. O ajuste certo é ir pra `^24` e corrigir o `.nvmrc` junto, não subir.
+1. **Few tests.** `jest.config.js` exists and works (ts-jest, jsdom by default, `@/` alias), but only the platform gate and `html.ts` have a suite. A pure node test opts out of jsdom with `@jest-environment node` at the top of the file.
+2. **The Supabase types are a placeholder.** `src/infrastructure/database/types.ts` declares `Tables: { [name: string]: GenericTable }` with `Record<string, unknown>`, so the typed client validates nothing. Generate the real types (`supabase gen types typescript --project-id <id>`) as soon as there is a schema. The Supabase CLI is not a project dependency; use `pnpm dlx supabase`.
+3. **The Anthropic SDK is behind the models.** The IDs in `anthropic.provider.ts` are current (`claude-opus-5-5` by default), but the `Model` union of `@anthropic-ai/sdk@0.121.0` does not list the 5.5 family: they pass through the type's `(string & {})` fallback, not because they are declared. It works, and you lose autocomplete and the wrong-ID check. Upgrade the SDK before using the provider in earnest.
+4. **`.nvmrc` says 22, the machine runs 24.** Node 24 is Vercel's current default; the `.nvmrc` is the one that is behind.
+5. **The `platform_admins` migration is the only one versioned.** The `public.users` table that `UserRepository` queries is not created by any migration: the Supabase base schema exists only in the remote project. The migration chain starts in the middle.
+6. **Three dependencies hold their version on purpose**, all pinned by the same lint ecosystem:
+   - `eslint` stays on 9. Version 10 removes `context.getFilename()`, and `eslint-plugin-react@7.37.5` (a transitive dependency of `eslint-config-next`) still calls it: `pnpm lint` dies with `contextOrFilename.getFilename is not a function`. npm already marks 9.39.5 as unsupported, so this is debt with a deadline.
+   - `typescript` stays on 6. `typescript-eslint@8.68` refuses TS 7.0 explicitly ("does not support TS 7.0"), and ts-jest breaks too. Only `tsc` and `next build` pass. Tracking: typescript-eslint#10940, which talks about supporting TS >= 7.1.
+   - `@types/node` stays on 25. Going to 26 widens the mismatch with the runtime: the machine runs Node 24 and so does Vercel. The right move is to go to `^24` and fix the `.nvmrc` with it, not to go up.
 
 ### Brotli (CVE-2026-111497)
 
-Node 22.23.4, 24.22.1 e 26.12.1 corrigem o decoder de Brotli. Enquanto a plataforma não estiver nessas versões, valem duas regras de código:
+Node 22.23.4, 24.22.1 and 26.12.1 fix the Brotli decoder. Until the platform is on those versions, two code rules apply:
 
-- **Resposta de URL que o usuário ou terceiro influencia:** use `safeGet`, nunca `fetch`. O `fetch` embutido decodifica `br` sozinho e antes do seu código ver a resposta. `safeGet` recusa qualquer `Content-Encoding` fora de identity, gzip e deflate antes de ler o corpo, e não segue redirect. Remover `br` do `Accept-Encoding` não basta: o servidor responde `br` mesmo assim.
-- **Corpo de request:** o Next 16.4.3 (route handlers) e o Fastify não decodificam `br` por omissão; o Express 5 e o body-parser 2 decodificam. Se um dia entrar Express aqui, recuse `br` no middleware (`inflate: false` dá 415 para `br` e `gzip`) antes de qualquer parser.
+- **Response from a URL the user or a third party can influence:** use `safeGet`, never `fetch`. The built-in `fetch` decodes `br` on its own, before your code sees the response. `safeGet` refuses any `Content-Encoding` other than identity, gzip and deflate before reading the body, and does not follow redirects. Removing `br` from `Accept-Encoding` is not enough: the server may answer `br` anyway.
+- **Request body:** Next 16.4.3 (route handlers) and Fastify do not decode `br` by default; Express 5 and body-parser 2 do. If Express ever enters this repo, refuse `br` in the middleware (`inflate: false` gives 415 for `br` and `gzip`) before any parser.
 
-## Comandos
+## Commands
 
-Esta máquina congela quando o tooling Node cresce demais. Sempre com teto de heap e timeout:
+This machine freezes when Node tooling grows too large. Always with a heap cap and a timeout:
 
 ```bash
-pnpm dev --port 3100                                              # ver nota sobre portas
+pnpm dev --port 3100                                              # see the note on ports
 NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm build
 NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm typecheck
 NODE_OPTIONS="--max-old-space-size=1536" timeout 240 pnpm lint
 NODE_OPTIONS="--max-old-space-size=1536" timeout 300 pnpm test --runInBand
 ```
 
-**Portas:** 3000 e 3001 pertencem a outros projetos desta máquina. Use uma porta dedicada (3100+) e nunca `pkill next`, que mata o dev server de outra sessão.
+**Ports:** 3000 and 3001 belong to other projects on this machine. Use a dedicated port (3100+) and never `pkill next`, which kills another session's dev server.
 
-**ESLint fica no v9.** O stack de lint do Next 16 (`eslint-config-next`) só suporta v9; se `ncu` propuser v10, recuse.
+**ESLint stays on v9.** The Next 16 lint stack (`eslint-config-next`) only supports v9; if `ncu` proposes v10, refuse.
 
-## Adicionar um domínio novo
+## Adding a new domain
 
-1. `src/core/{domain}/{contracts,entities,services}/`: contrato primeiro, entidade depois, serviço por último
-2. Um serviço = um caso de uso = um método público `execute()`
-3. `src/infrastructure/repositories/{domain}.repository.ts`, estendendo `BaseRepository` (ela injeta o `SupabaseClient` e converte erro do Postgres em `DatabaseError`)
-4. `src/app/api/v1/{domain}/route.ts`: fino. Valida com Zod, injeta, chama, responde
-5. `src/features/{domain}/` para a UI
+1. `src/core/{domain}/{contracts,entities,services}/`: contract first, entity next, service last
+2. One service = one use case = one public `execute()` method
+3. `src/infrastructure/repositories/{domain}.repository.ts`, extending `BaseRepository` (it injects the `SupabaseClient` and converts a Postgres error into `DatabaseError`)
+4. `src/app/api/v1/{domain}/route.ts`: thin. Validates with Zod, injects, calls, responds
+5. `src/features/{domain}/` for the UI
 
-## Antes de commitar
+## Before committing
 
-`pnpm typecheck`, `pnpm lint`, `pnpm test` e `pnpm build` precisam passar, sempre com o teto de heap e o timeout da seção "Comandos". Se a mudança toca `supabase/`, rode também as migrations do zero em um stack local descartável (`supabase db reset`, depois `supabase stop --no-backup`). O passo a passo está em `.agents/rules/sdlc.md`. Commit em Conventional Commits, uma unidade lógica por commit.
+`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` must pass, always with the heap cap and timeout from "Commands". If the change touches `supabase/`, also run the migrations from scratch on a disposable local stack (`supabase db reset`, then `supabase stop --no-backup`). The step by step is in `.agents/rules/sdlc.md`. Commits follow Conventional Commits, one logical unit per commit.
